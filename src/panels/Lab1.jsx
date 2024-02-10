@@ -4,7 +4,7 @@ import { Icon24Back } from '@vkontakte/icons';
 import { dispatch } from '../main.jsx';
 import { goBack } from '../store/router';
 import lab1 from '../data/lab1.json';
-import { v4 as uuidv4 } from 'uuid'; // Импорт uuid
+import { v4 as uuidv4 } from 'uuid';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -32,91 +32,78 @@ ChartJS.register(
 );
 
 class Main extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      arr: lab1.map(x => ({ value: uuidv4(), label: x.toString() })) // Генерация уникальных ключей здесь
-    };
-  }
+	constructor(props) {
+		super(props);
+		this.state = {
+		arr: lab1.map(x => ({ value: uuidv4(), label: x.toString() }))
+		};
+	}
 
-  handleChipChange = (newChips) => {
-    this.setState({ arr: newChips.map(x => ({ value: uuidv4(), label: x.label })) });
-  }
+	handleChipChange = (newChips) => {
+		this.setState({ arr: newChips.map(x => ({ value: uuidv4(), label: x.label })) });
+	}
 	getStatisticalSeries = (arr) => {
-    // Подсчет частоты уникальных значений
-    const frequencyMap = arr.reduce((acc, current) => {
-      const value = parseFloat(current.label).toFixed(2); // Округляем до двух знаков после запятой
-      acc[value] = (acc[value] || 0) + 1;
-      return acc;
-    }, {});
-
-    // Преобразование частотной карты в массив для отображения
-    const statisticalSeries = Object.entries(frequencyMap).map(([value, frequency]) => ({
-      value,
-      frequency
-    }));
-
-    // Сортировка статистического ряда
-    statisticalSeries.sort((a, b) => parseFloat(a.value) - parseFloat(b.value));
-
-    return statisticalSeries;
-  }
+		const frequencyMap = arr.reduce((acc, current) => {
+			const value = parseFloat(current.label).toFixed(2);
+			acc[value] = (acc[value] || 0) + 1;
+			return acc;
+		}, {});
+		const statisticalSeries = Object.entries(frequencyMap).map(([value, frequency]) => ({
+			value,
+			frequency
+		}));
+		statisticalSeries.sort((a, b) => parseFloat(a.value) - parseFloat(b.value));
+		return statisticalSeries;
+	}
 
 	getGroupedStatisticalSeries = (arr) => {
-    const length = arr.length;
-    const k = Math.ceil(1 + 3.32 * Math.log10(length)); // Округляем до ближайшего большего целого
-    const max = Math.max(...arr.map(x => parseFloat(x.label)));
-    const min = Math.min(...arr.map(x => parseFloat(x.label)));
-    const b = (max - min) / k;
+		const length = arr.length;
+		const k = Math.ceil(1+3.32*Math.log10(length));
+		const max = Math.max(...arr.map(x => parseFloat(x.label)));
+		const min = Math.min(...arr.map(x => parseFloat(x.label)));
+		const b = (max-min)/k;
 
-    let boundaries = Array.from({ length: k + 1 }, (_, i) => min + i * b);
-    let frequencies = new Array(k).fill(0);
-    let accumulatedFrequencies = 0;
-    let relativeFrequencies = new Array(k).fill(0);
-    let accumulatedRelativeFrequencies = 0;
+		let boundaries = Array.from({ length: k+1 }, (_, i) => min+i*b);
+		let frequencies = new Array(k).fill(0);
+		let accumulatedFrequencies = 0;
+		let accumulatedRelativeFrequencies = 0;
 
-    // Подсчет частот
-    for (let value of arr) {
-      let val = parseFloat(value.label);
-      let index = Math.min(Math.floor((val - min) / b), k - 1);
-      frequencies[index]++;
-    }
+		for(let value of arr){
+			let val = parseFloat(value.label);
+			let index = Math.min(Math.floor((val-min)/b), k - 1);
+			frequencies[index]++;
+		}
 
-    // Создание ряда
-    let series = boundaries.slice(1).map((upperBoundary, index) => {
-      let lowerBoundary = boundaries[index];
-      let frequency = frequencies[index];
-      accumulatedFrequencies += frequency;
-      let relativeFrequency = frequency / length;
-      accumulatedRelativeFrequencies += relativeFrequency;
+		let series = boundaries.slice(1).map((upperBoundary, index) => {
+			let lowerBoundary = boundaries[index];
+			let frequency = frequencies[index];
+			accumulatedFrequencies += frequency;
+			let relativeFrequency = frequency / length;
+			accumulatedRelativeFrequencies += relativeFrequency;
 
-      return {
-        number: index + 1,
-        lowerBoundary: lowerBoundary.toFixed(2),
-        upperBoundary: upperBoundary.toFixed(2),
-        midpoint: ((lowerBoundary + upperBoundary) / 2).toFixed(2),
-        frequency,
-        accumulatedFrequency: accumulatedFrequencies,
-        relativeFrequency: relativeFrequency.toFixed(4),
-        accumulatedRelativeFrequency: accumulatedRelativeFrequencies.toFixed(4),
-      };
-    });
+			return {
+				number: index+1,
+				lowerBoundary: lowerBoundary.toFixed(2),
+				upperBoundary: upperBoundary.toFixed(2),
+				midpoint: ((lowerBoundary+upperBoundary)/2).toFixed(2),
+				frequency,
+				accumulatedFrequency: accumulatedFrequencies,
+				relativeFrequency: relativeFrequency.toFixed(4),
+				accumulatedRelativeFrequency: accumulatedRelativeFrequencies.toFixed(4),
+			};
+		});
 
-    return series;
-  }
+		return series;
+	}
 
-  render() {
-    const { arr } = this.state;
+  render(){
+    const {arr} = this.state;
     const sortedArr = arr.slice().sort((a, b) => parseFloat(a.label) - parseFloat(b.label));
     const statisticalSeries = this.getStatisticalSeries(sortedArr);
-		const groupedStatisticalSeries = this.getGroupedStatisticalSeries(arr);
-
-		const labels = groupedStatisticalSeries.map(item => item.lowerBoundary+'-'+item.upperBoundary); // середины интервалов
-		const data = groupedStatisticalSeries.map(item => item.frequency); // частоты
-		
+		const groupedStatisticalSeries = this.getGroupedStatisticalSeries(arr);		
 		function getPolygonChartData(data){
 			return {
-				labels: labels,
+				labels: groupedStatisticalSeries.map(item => item.lowerBoundary+'-'+item.upperBoundary),
 				datasets: [
 					{
 						data,
@@ -128,7 +115,6 @@ class Main extends Component {
 				]
 			}
 		}
-
 		const options = {
 			title: {
 				display: true,
@@ -140,27 +126,25 @@ class Main extends Component {
 				position: 'bottom'
 			},
 			scales: {
-				y: { // Обновлено с yAxes на y
+				y: {
 					beginAtZero: true,
-					title: { // Обновлено с scaleLabel на title
+					title: {
 						display: true,
-						text: 'Частота',
-					},
+						text: 'Частота'
+					}
 				},
-				x: { // Обновлено с xAxes на x
-					title: { // Обновлено с scaleLabel на title
+				x: {
+					title: {
 						display: true,
-						text: 'Интервалы',
-					},
+						text: 'Интервалы'
+					}
 				}
 			}
 		};
     
     return (
       <Panel>
-        <PanelHeader before={<Icon24Back onClick={() => dispatch(goBack())} />}>
-          Лабораторная работа №1
-        </PanelHeader>
+        <PanelHeader before={<Icon24Back onClick={() => dispatch(goBack())}/>}>Лабораторная работа №1</PanelHeader>
         <FormItem top='Изначальный массив'>
           <ChipsInput
 						disabled

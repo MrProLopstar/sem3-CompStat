@@ -6,6 +6,7 @@ import {Icon28AddCircleOutline,Icon28ArchiveOutline,Icon28RectangleSplit4UnevenO
 import store, {dispatch} from './main.jsx';
 import Hub from './panels/Hub.jsx';
 import Lab1 from './panels/Lab1.jsx';
+import Lab2 from './panels/Lab2.jsx';
 
 class App extends Component {
   constructor(props){
@@ -66,6 +67,7 @@ class App extends Component {
                   >
                     <Hub id='hub'/>
                     <Lab1 id='lab1'/>
+                    <Lab2 id='lab2'/>
                   </View>
               </SplitCol>
             </SplitLayout>

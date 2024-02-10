@@ -16,10 +16,10 @@ class Main extends Component {
   render(){
     return(
       <Panel>
-				<PanelHeader>
-          Лабораторные работы Гостяева Ярослава
-        </PanelHeader>
-        <Button onClick={() => dispatch(setPage(['labs','hub']))}>Лабораторная работа №1</Button>
+				<PanelHeader>Лабораторные работы Гостяева Ярослава</PanelHeader>
+        {new Array(2).fill(0).map((x,i) => (
+          <Button key={i+1} onClick={() => dispatch(setPage(['labs','lab'+(i+1)]))} style={{margin:5}}>Лабораторная работа №{i+1}</Button>
+        ))}
       </Panel>
     )
   }
