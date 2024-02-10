@@ -9,7 +9,7 @@ import './App.css';
 
 export default store;
 export const {dispatch, getState} = store;
-dispatch(setStory(['labs','lab1']));
+dispatch(setStory(['labs','hub']));
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <Provider store={store}>
