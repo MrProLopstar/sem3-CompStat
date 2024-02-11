@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Panel, PanelHeader, FormItem, ChipsInput, FormLayoutGroup } from '@vkontakte/vkui';
 import { Icon24Back } from '@vkontakte/icons';
-import { dispatch } from '../main.jsx';
+import { getState, dispatch } from '../main.jsx';
 import { goBack } from '../store/router';
 import lab1 from '../data/lab1.json';
 import { v4 as uuidv4 } from 'uuid';
@@ -32,10 +32,11 @@ ChartJS.register(
 );
 
 class Main extends Component {
-	constructor(props) {
+	constructor(props){
 		super(props);
+		const {arr} = getState().app;
 		this.state = {
-		arr: lab1.map(x => ({ value: uuidv4(), label: x.toString() }))
+			arr: arr.map(x => ({ value: uuidv4(), label: x.toFixed(6).toString() }))
 		};
 	}
 
@@ -44,7 +45,7 @@ class Main extends Component {
 	}
 	getStatisticalSeries = (arr) => {
 		const frequencyMap = arr.reduce((acc, current) => {
-			const value = parseFloat(current.label).toFixed(2);
+			const value = parseFloat(current.label).toFixed(6);
 			acc[value] = (acc[value] || 0) + 1;
 			return acc;
 		}, {});
@@ -83,13 +84,13 @@ class Main extends Component {
 
 			return {
 				number: index+1,
-				lowerBoundary: lowerBoundary.toFixed(2),
-				upperBoundary: upperBoundary.toFixed(2),
-				midpoint: ((lowerBoundary+upperBoundary)/2).toFixed(2),
+				lowerBoundary: lowerBoundary.toFixed(6),
+				upperBoundary: upperBoundary.toFixed(6),
+				midpoint: ((lowerBoundary+upperBoundary)/2).toFixed(6),
 				frequency,
 				accumulatedFrequency: accumulatedFrequencies,
-				relativeFrequency: relativeFrequency.toFixed(4),
-				accumulatedRelativeFrequency: accumulatedRelativeFrequencies.toFixed(4),
+				relativeFrequency: relativeFrequency.toFixed(6),
+				accumulatedRelativeFrequency: accumulatedRelativeFrequencies.toFixed(6),
 			};
 		});
 
@@ -98,6 +99,7 @@ class Main extends Component {
 
   render(){
     const {arr} = this.state;
+		const {title} = getState().app;
     const sortedArr = arr.slice().sort((a, b) => parseFloat(a.label) - parseFloat(b.label));
     const statisticalSeries = this.getStatisticalSeries(sortedArr);
 		const groupedStatisticalSeries = this.getGroupedStatisticalSeries(arr);		
@@ -144,7 +146,7 @@ class Main extends Component {
     
     return (
       <Panel>
-        <PanelHeader before={<Icon24Back onClick={() => dispatch(goBack())}/>}>Лабораторная работа №1</PanelHeader>
+        <PanelHeader before={<Icon24Back onClick={() => dispatch(goBack())}/>}>{title}</PanelHeader>
         <FormItem top='Изначальный массив'>
           <ChipsInput
 						disabled

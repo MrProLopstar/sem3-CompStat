@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Panel, PanelHeader, FormItem, ChipsInput, FormLayoutGroup, Input, Select, Button } from '@vkontakte/vkui';
 import { Icon24Back } from '@vkontakte/icons';
-import { dispatch } from '../main.jsx';
+import { getState, dispatch } from '../main.jsx';
 import { goBack } from '../store/router';
 import { v4 as uuidv4 } from 'uuid';
 import { Line, Bar } from 'react-chartjs-2';
@@ -31,7 +31,7 @@ ChartJS.register(
   Filler
 );
 
-class Main extends Component {
+class Lab2 extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -107,6 +107,7 @@ class Main extends Component {
 	}
 
 	render(){
+		const {title} = getState().app;
 		const {select,N,P,table,Xmin,Xmax,step,A,D} = this.state;
 		const options = {
 			legend: {
@@ -131,10 +132,10 @@ class Main extends Component {
 		};
 		return (
 			<Panel>
-				<PanelHeader before={<Icon24Back onClick={() => dispatch(goBack())}/>}>Лабораторная работа №2</PanelHeader>
+				<PanelHeader before={<Icon24Back onClick={() => dispatch(goBack())}/>}>{title}</PanelHeader>
 				{select==0 || select==1 ? (
 					<FormLayoutGroup mode="horizontal" segmented>
-						<FormItem top="Найти значение для">
+						<FormItem top="Найти значения для">
 							<Select
 								value={select}
 								options={['Биномиального распределения','Распределения Пуассона','Нормального распределения'].map((i,index) => ({
@@ -253,4 +254,4 @@ class Main extends Component {
 	}
 }
 
-export default Main;
+export default Lab2;
