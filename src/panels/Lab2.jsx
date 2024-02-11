@@ -76,10 +76,10 @@ class Main extends Component {
 				});
 			}
 		} else if(select==1){
-			const lambda = N*P;
+			const lambda = P;
 			if(lambda<=0) return alert("Ошибка: λ должно быть больше 0");
 			for(let x=0; x<=N; x++){
-				let probability = (Math.exp(-lambda)*Math.pow(lambda, x))/this.factorial(x);
+				let probability = (Math.exp(-lambda)*Math.pow(lambda,x))/this.factorial(x);
 				totalProbability += probability;
 				normalDistribution.push({
 					x: x,
