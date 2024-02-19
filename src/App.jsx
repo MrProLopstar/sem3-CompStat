@@ -7,6 +7,7 @@ import store, {dispatch} from './main.jsx';
 import Hub from './panels/Hub.jsx';
 import Lab1 from './panels/Lab1.jsx';
 import Lab2 from './panels/Lab2.jsx';
+import Lab2_v2 from './panels/Lab2_v2.jsx';
 import Lab3 from './panels/Lab3.jsx';
 
 class App extends Component {
@@ -67,8 +68,8 @@ class App extends Component {
                     onSwipeBack={() => { dispatch(goBack()); }}
                   >
                     <Hub id='hub'/>
-                    {[Lab1,Lab2,Lab3].map((L,i) => (
-                      <L id={'lab'+(i+1)} num={i+1}/>
+                    {[Lab1,Lab2,Lab2_v2,Lab3].map((L,i) => (
+                      <L id={'lab'+(i+1)} num={i==2 ? 1 : i+1}/>
                     ))}
                   </View>
               </SplitCol>

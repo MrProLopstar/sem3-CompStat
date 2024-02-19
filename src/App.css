@@ -3,3 +3,29 @@
     padding: 5px;
     text-align: center;
 }
+
+.container {
+    display: flex; /* Включаем flexbox */
+  }
+  
+  /* Стили для левой и правой панели */
+  .split {
+    flex: 1; /* Каждая панель занимает равную часть контейнера */
+    overflow: auto; /* При необходимости добавляется прокрутка */
+  }
+  
+  /* Control the left side */
+  .left {
+    left: 0;
+  }
+  
+  /* Control the right side */
+  .right {
+    right: 0;
+  }
+  .form-container {
+    display: flex; /* Включаем flexbox */
+    flex-direction: column; /* Элементы располагаются в столбик */
+    justify-content: space-between; /* Распределяем элементы равномерно */
+    height: 100%; /* Высота контейнера подстраивается под родительский элемент */
+  }

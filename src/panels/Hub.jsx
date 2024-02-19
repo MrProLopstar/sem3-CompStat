@@ -19,11 +19,12 @@ class Main extends Component {
     return(
       <Panel>
 				<PanelHeader>Лабораторные работы Гостяева Ярослава</PanelHeader>
-        {new Array(3).fill(0).map((x,i) => (
+        {new Array(4).fill(0).map((x,i) => (
           <Button key={i+1} onClick={() => {
+            console.log(i)
             dispatch(setPage(['labs','lab'+(i+1)]));
-            dispatch(setPageState({title: 'Лабораторная работа №'+(i+1), arr: i==0 ? lab1 : null}));
-          }} style={{margin:5}}>Лабораторная работа №{i+1}</Button>
+            dispatch(setPageState({title: 'Лабораторная работа №'+(i>1 ? (i==2 ? `2 (V2)` : i) : i+1), arr: i==0 ? lab1 : null}));
+          }} style={{margin:5}}>Лабораторная работа №{i>1 ? (i==2 ? `2 (V2)` : i) : i+1}</Button>
         ))}
       </Panel>
     )
