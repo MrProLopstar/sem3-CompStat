@@ -43,8 +43,8 @@ class Lab2 extends Component {
 			step: 1,
 			A: 4, //мат. ожидание
 			D: 5, //ср.кв. отклонение
-			hyper: null,
-            beta: null
+			binom: null,
+            norm: null
 		};
 	}
 
@@ -57,57 +57,60 @@ class Lab2 extends Component {
 		return this.factorial(n) / (this.factorial(k) * this.factorial(n - k));
 	};
 
-	normalPdf = (X, M, D) => {
-		return (1/(D*Math.sqrt(2*Math.PI))) * Math.exp(-Math.pow(X-M,2)/(2*Math.pow(D,2)));
-	};
-
 	calculation = () => {
-		const {select,N,P,Xmin,Xmax,step,A,D} = this.state;
-		let normalDistribution = [];
-		let totalProbability = 0;
-		if(select==0){
-			if(N<=0 || P<=0 || P>=1) return alert("Ошибка инициализации входных данных, проверьте выполнимость условий: N>0 и 0 < P < 1");
-			for (let i = 0; i <= N; i++) {
-				let pmfValue = this.combination(N,i)*Math.pow(P,i)*Math.pow(1-P,N-i);
-				totalProbability += pmfValue;
-				normalDistribution.push({
-					x: i,
-					pmf: pmfValue,
-					cdf: totalProbability
-				});
-			}
-		} else if(select==1){
-			const lambda = P;
-			if(lambda<=0) return alert("Ошибка: λ должно быть больше 0");
-			for(let x=0; x<=N; x++){
-				let probability = (Math.exp(-lambda)*Math.pow(lambda,x))/this.factorial(x);
-				totalProbability += probability;
-				normalDistribution.push({
-					x: x,
-					pmf: probability,
-					cdf: totalProbability
-				});
-			}
-		} else if(select==2){
-			if(D<=0) return alert("Стандартное отклонение должно быть больше 0.");
-			else if(step<=0) return alert("Шаг должен быть больше 0.");
-			else if(Xmin>=Xmax) return alert("Xmin должен быть меньше Xmax.");
-			for(let x=Xmin; x<=Xmax; x+=step){
-				const pdfValue = (1/(D*Math.sqrt(2*Math.PI))) * Math.exp(-Math.pow(x-A,2)/(2*Math.pow(D,2)));
-				const zValue = (x-A)/(D*Math.sqrt(2));
-				const cdfValue = 0.5*(1+erf(zValue));
-				normalDistribution.push({
-					x: x,
-					pmf: pdfValue,
-					cdf: cdfValue
-				});
-				totalProbability += pdfValue*step;
-			}
-		}
-		this.setState({ table: normalDistribution });
+		const {N,P,Xmin,Xmax,step,A,D} = this.state;
+        console.log(Xmin,Xmax)
+		let binom = [], norm = [];
+		let binomTotal = 0;
+        if(N<=0 || P<=0 || P>=1) return alert("Ошибка инициализации входных данных, проверьте выполнимость условий: N>0 и 0 < P < 1");
+        for (let i = 0; i <= N; i++) {
+            let pmfValue = (this.factorial(N)/(this.factorial(i)*this.factorial(N-i)))*Math.pow(P,i)*Math.pow(1-P,N-i);
+            binomTotal += pmfValue;
+            binom.push({
+                x: i,
+                pmf: pmfValue,
+                cdf: binomTotal
+            });
+        }
+        if(D<=0) return alert("Стандартное отклонение должно быть больше 0.");
+        else if(step<=0) return alert("Шаг должен быть больше 0.");
+        else if(Xmin>=Xmax) return alert("Xmin должен быть меньше Xmax.");
+        for(let x=Number(Xmin); x<=Number(Xmax); x+=step){
+            const pdfValue = (1/(D*Math.sqrt(2*Math.PI))) * Math.exp(-Math.pow(x-A,2)/(2*Math.pow(D,2)));
+            const zValue = (x-A)/(D*Math.sqrt(2));
+            const cdfValue = 0.5*(1+erf(zValue));
+            norm.push({
+                x: x,
+                pmf: pdfValue,
+                cdf: cdfValue
+            });
+            //totalProbability += pdfValue*step;
+        }
+		this.setState({binom,norm});
 	}
 
-    tables = (table) => {
+    renderTable = (table) => {
+		const options = {
+			legend: {
+				display: true,
+				position: 'bottom'
+			},
+			scales: {
+				y: {
+					beginAtZero: true,
+					title: {
+						display: true,
+						text: 'Частота'
+					}
+				},
+				x: {
+					title: {
+						display: true,
+						text: 'X'
+					}
+				}
+			}
+		};
         if(table) return (
             <div>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -154,35 +157,14 @@ class Lab2 extends Component {
 
 	render(){
 		const {title} = getState().app;
-		const {select,N,P,hyper,beta,Xmin,Xmax,step,A,D} = this.state;
-		const options = {
-			legend: {
-				display: true,
-				position: 'bottom'
-			},
-			scales: {
-				y: {
-					beginAtZero: true,
-					title: {
-						display: true,
-						text: 'Частота'
-					}
-				},
-				x: {
-					title: {
-						display: true,
-						text: 'X'
-					}
-				}
-			}
-		};
+		const {select,N,P,binom,norm,Xmin,Xmax,step,A,D} = this.state;
 		return (
 			<Panel>
 				<PanelHeader before={<Icon24Back onClick={() => dispatch(goBack())}/>}>{title}</PanelHeader>
                 <div className='container'>
                     <div className="split left">
-                        <FormItem top="Диксретное Гипергеометрического распределения">
-                            <FormLayoutGroup mode="horizontal" segmented>
+                        <FormItem top="Диксретное Биномиальное распределения">
+                            <FormLayoutGroup mode="horizontal" segmented style={{marginTop:25}}>
                                 <FormItem top='N:'>
                                     <Input
                                         value={N}
@@ -199,7 +181,7 @@ class Lab2 extends Component {
                         </FormItem>
                     </div>
                     <div className='split right'>
-                        <FormItem top="Непрерывное Бета распределение">
+                        <FormItem top="Непрерывное Нормальное распределение">
                             <FormLayoutGroup mode="horizontal" segmented>
                                 <FormItem top='X (min):'>
                                     <Input
@@ -238,6 +220,14 @@ class Lab2 extends Component {
                     </div>
                 </div>
 				<FormItem><Button rounded stretched onClick={this.calculation}>Рассчёт</Button></FormItem>
+                <div className='container'>
+                    <div className="split left" style={{marginRight: 50, marginLeft: 5}}>
+                        {binom && this.renderTable(binom)}
+                    </div>
+                    <div className='split right' style={{marginRight: 5}}>
+                        {norm && this.renderTable(norm)}
+                    </div>
+                </div>
 			</Panel>
 		);
 	}

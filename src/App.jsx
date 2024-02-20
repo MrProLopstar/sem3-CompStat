@@ -22,11 +22,8 @@ class App extends Component {
       const newReduxState = store.getState();
       if(this.state.reduxState!==newReduxState) this.setState({ reduxState: newReduxState });
     });
-    window.addEventListener('resize', this.resize);
+    window.addEventListener('resize', () => this.forceUpdate());
   }
-  resize = () => {
-    this.forceUpdate();
-  };
 
   render(){
     const {platform} = this.props;
