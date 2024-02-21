@@ -79,11 +79,12 @@ class Lab2 extends Component {
     };
 	calculation = () => {
 		const {N,P,Xmin,Xmax,step,A,D} = this.state;
+        let binom_quantiles = {}, norm_quantiles = {};
         console.log(Xmin,Xmax)
 		let binom = [], norm = [];
 		let binomTotal = 0;
         if(N<=0 || P<=0 || P>=1) return alert("Ошибка инициализации входных данных, проверьте выполнимость условий: N>0 и 0 < P < 1");
-        for (let i = 0; i <= N; i++) {
+        for(let i=0; i<=N; i++) {
             let pmfValue = (this.factorial(N)/(this.factorial(i)*this.factorial(N-i)))*Math.pow(P,i)*Math.pow(1-P,N-i);
             binomTotal += pmfValue;
             binom.push({
@@ -92,8 +93,6 @@ class Lab2 extends Component {
                 cdf: binomTotal
             });
         }
-        let binom_quantiles = {};
-        for(let q=0.05; q<1; q+=0.05) binom_quantiles[q.toFixed(2)] = this.findBinomialQuantile(N, P, q);
         if(D<=0) return alert("Стандартное отклонение должно быть больше 0.");
         else if(step<=0) return alert("Шаг должен быть больше 0.");
         else if(Xmin>=Xmax) return alert("Xmin должен быть меньше Xmax.");
@@ -106,26 +105,15 @@ class Lab2 extends Component {
                 pmf: pdfValue,
                 cdf: cdfValue
             });
-            //totalProbability += pdfValue*step;
         }
-        let norm_quantiles = {};
-  for (let q = 0.05; q < 1; q += 0.05) {
-    norm_quantiles[q.toFixed(2)] = this.calculateStandardNormalQuantile(q);
-  }
-  console.log(norm_quantiles)
-		this.setState({binom,binom_quantiles,norm});
+        for(let q=0.05; q<1; q+=0.05){
+            binom_quantiles[q.toFixed(2)] = this.findBinomialQuantile(N, P, q);
+            norm_quantiles[q.toFixed(2)] = A+(D*this.findStandardNormalQuantile(q));
+        }
+		this.setState({binom,binom_quantiles,norm,norm_quantiles});
 	}
-    calculateQuantiles(a, sigma, pMin, pMax, step) {
-        let p = pMin;
-        while (p <= pMax) {
-          const z = Math.sqrt(2) * erf(2 * p - 1); // Квантиль Z-распределения
-          const t = a + sigma * z; // Квантиль нормального распределения
-          console.log(`p: ${p.toFixed(2)}, t(p): ${t.toFixed(3)}`);
-          p += step;
-        }
-      }
 
-    renderTable = (table) => {
+    renderTable = (table, type) => {
 		const options = {
 			legend: {
 				display: true,
@@ -136,7 +124,7 @@ class Lab2 extends Component {
 					beginAtZero: true,
 					title: {
 						display: true,
-						text: 'Частота'
+						text: type === 'distribution' ? 'Частота' : 'p'
 					}
 				},
 				x: {
@@ -151,52 +139,67 @@ class Lab2 extends Component {
             <div>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
-                        <tr>
-                            <th className="table-cell">X</th>
-                            <th className="table-cell">P(X=x)</th>
-                            <th className="table-cell">F(X=x)</th>
-                        </tr>
+                        {type === 'distribution' ?
+                            <tr>
+                                <th className="table-cell">X</th>
+                                <th className="table-cell">P(X=x)</th>
+                                <th className="table-cell">F(X=x)</th>
+                            </tr>
+                        :   <tr>
+                                <th className="table-cell">X</th>
+                                <th className="table-cell">p</th>
+                            </tr>}
                     </thead>
                     <tbody>
-                        {table.map((item, index) => (
+                        {type === 'distribution' ? table.map((item, index) => (
                             <tr key={index}>
                                 <td className="table-cell">{item.x}</td>
                                 <td className="table-cell">{item.pmf?.toFixed(10)}</td>
                                 <td className="table-cell">{item.cdf?.toFixed(10)}</td>
                             </tr>
+                        )) : Object.keys(table).map((item, index) => (
+                            <tr key={index}>
+                                <td className="table-cell">{item}</td>
+                                <td className="table-cell">{table[item].toFixed(10)}</td>
+                            </tr>
                         ))}
                     </tbody>
                 </table>
                 <FormItem>
-                    <Bar options={options} data={{
-                        labels: table.map(item => item.x),
+                    {type === 'distribution' ? <Bar options={options} data={{
+                        labels: type === 'distribution' ? table.map(item => item.x) : Object.keys(table),
+                        datasets: [{
+                            data: table.map(item => item.pmf),
+                            label: 'Плотность распределения вероятностей',
+                            borderColor: 'rgba(75,192,192,1)',
+                            backgroundColor: 'rgba(75,192,192,0.2)',
+                            fill: false
+                        },
+                        {
+                            data: table.map(item => item.cdf),
+                            label: 'Функция распределения вероятностей',
+                            borderColor: 'rgba(138,43,226,1)',
+                            backgroundColor: 'rgba(138,43,226,0.2)',
+                            fill: false
+                        }]}}/>
+                    : <Line options={options} data={{
+                        labels: type === 'distribution' ? table.map(item => item.x) : Object.keys(table),
                         datasets: [
                             {
-                                data: table.map(item => item.pmf),
-                                label: 'Плотность распределения вероятностей',
+                                data: Object.keys(table).map(x => table[x]),
+                                label: 'Частота',
                                 borderColor: 'rgba(75,192,192,1)',
                                 backgroundColor: 'rgba(75,192,192,0.2)',
                                 fill: false
-                            },
-                            {
-                                data: table.map(item => item.cdf),
-                                label: 'Функция распределения вероятностей',
-                                borderColor: 'rgba(138,43,226,1)',
-                                backgroundColor: 'rgba(138,43,226,0.2)',
-                                fill: false
-                            }
-                    ]}}/>
+                            }]}}/>}
                 </FormItem>
             </div>
         )
     }
 
 	render(){
-      
-        // Используем функцию для расчёта квантилей
-        this.calculateQuantiles(7, 0.3, 0.01, 0.71, 0.1);
 		const {title} = getState().app;
-		const {select,N,P,binom,norm,Xmin,Xmax,step,A,D} = this.state;
+		const {select,N,P,binom,norm,Xmin,Xmax,step,A,D,binom_quantiles,norm_quantiles} = this.state;
 		return (
 			<Panel>
 				<PanelHeader before={<Icon24Back onClick={() => dispatch(goBack())}/>}>{title}</PanelHeader>
@@ -261,10 +264,12 @@ class Lab2 extends Component {
 				<FormItem><Button rounded stretched onClick={this.calculation}>Рассчёт</Button></FormItem>
                 <div className='container' style={{marginTop: 25}}>
                     <div className="split left" style={{marginRight: 50, marginLeft: 5}}>
-                        {binom && this.renderTable(binom)}
+                        {binom && this.renderTable(binom, 'distribution')}
+                        {binom && this.renderTable(binom_quantiles, 'quantiles')}
                     </div>
                     <div className='split right' style={{marginRight: 5}}>
-                        {norm && this.renderTable(norm)}
+                        {norm && this.renderTable(norm, 'distribution')}
+                        {binom && this.renderTable(norm_quantiles, 'quantiles')}
                     </div>
                 </div>
 			</Panel>
