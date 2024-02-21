@@ -57,6 +57,26 @@ class Lab2 extends Component {
 		return this.factorial(n) / (this.factorial(k) * this.factorial(n-k));
 	};
 
+    binomialCDF = (n, p, x) => {
+      let cdf = 0;
+      for(let k=0; k<=x; k++) cdf += this.combination(n, k)*Math.pow(p, k)*Math.pow(1-p, n-k);
+      return cdf;
+    };
+    
+    findBinomialQuantile = (n, p, q) => {
+      let cumulativeProbability = 0;
+      let x = 0;
+      for(x=0; x<=n; x++){
+        cumulativeProbability = this.binomialCDF(n,p,x);
+        if(cumulativeProbability>=q) break;
+      }
+      return x;
+    };
+    findStandardNormalQuantile = (p) => {
+        if(p<=0 || p>=1) throw new Error('p must be between 0 and 1');
+        const z = Math.sqrt(2) * erf(2*p-1);
+        return z;
+    };
 	calculation = () => {
 		const {N,P,Xmin,Xmax,step,A,D} = this.state;
         console.log(Xmin,Xmax)
@@ -72,6 +92,8 @@ class Lab2 extends Component {
                 cdf: binomTotal
             });
         }
+        let binom_quantiles = {};
+        for(let q=0.05; q<1; q+=0.05) binom_quantiles[q.toFixed(2)] = this.findBinomialQuantile(N, P, q);
         if(D<=0) return alert("Стандартное отклонение должно быть больше 0.");
         else if(step<=0) return alert("Шаг должен быть больше 0.");
         else if(Xmin>=Xmax) return alert("Xmin должен быть меньше Xmax.");
@@ -86,7 +108,12 @@ class Lab2 extends Component {
             });
             //totalProbability += pdfValue*step;
         }
-		this.setState({binom,norm});
+        let norm_quantiles = {};
+  for (let q = 0.05; q < 1; q += 0.05) {
+    norm_quantiles[q.toFixed(2)] = this.calculateStandardNormalQuantile(q);
+  }
+  console.log(norm_quantiles)
+		this.setState({binom,binom_quantiles,norm});
 	}
     calculateQuantiles(a, sigma, pMin, pMax, step) {
         let p = pMin;
