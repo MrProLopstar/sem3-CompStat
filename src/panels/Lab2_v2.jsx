@@ -54,7 +54,7 @@ class Lab2 extends Component {
 		return result;
 	};
 	combination = (n, k) => {
-		return this.factorial(n) / (this.factorial(k) * this.factorial(n - k));
+		return this.factorial(n) / (this.factorial(k) * this.factorial(n-k));
 	};
 
 	calculation = () => {
@@ -88,6 +88,15 @@ class Lab2 extends Component {
         }
 		this.setState({binom,norm});
 	}
+    calculateQuantiles(a, sigma, pMin, pMax, step) {
+        let p = pMin;
+        while (p <= pMax) {
+          const z = Math.sqrt(2) * erf(2 * p - 1); // Квантиль Z-распределения
+          const t = a + sigma * z; // Квантиль нормального распределения
+          console.log(`p: ${p.toFixed(2)}, t(p): ${t.toFixed(3)}`);
+          p += step;
+        }
+      }
 
     renderTable = (table) => {
 		const options = {
@@ -156,6 +165,9 @@ class Lab2 extends Component {
     }
 
 	render(){
+      
+        // Используем функцию для расчёта квантилей
+        this.calculateQuantiles(7, 0.3, 0.01, 0.71, 0.1);
 		const {title} = getState().app;
 		const {select,N,P,binom,norm,Xmin,Xmax,step,A,D} = this.state;
 		return (
@@ -220,7 +232,7 @@ class Lab2 extends Component {
                     </div>
                 </div>
 				<FormItem><Button rounded stretched onClick={this.calculation}>Рассчёт</Button></FormItem>
-                <div className='container'>
+                <div className='container' style={{marginTop: 25}}>
                     <div className="split left" style={{marginRight: 50, marginLeft: 5}}>
                         {binom && this.renderTable(binom)}
                     </div>
