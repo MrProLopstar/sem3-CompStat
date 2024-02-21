@@ -187,7 +187,7 @@ class Lab2 extends Component {
                         datasets: [
                             {
                                 data: Object.keys(table).map(x => table[x]),
-                                label: 'Частота',
+                                label: 'Квантиль',
                                 borderColor: 'rgba(75,192,192,1)',
                                 backgroundColor: 'rgba(75,192,192,0.2)',
                                 fill: false
