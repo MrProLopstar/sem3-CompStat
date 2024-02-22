@@ -77,6 +77,26 @@ class Lab2 extends Component {
         const z = Math.sqrt(2) * erf(2*p-1);
         return z;
     };
+    simpson = (f, a, b, n) => {
+        const h = (b - a) / n;
+        let sum1 = 0, sum2 = 0;
+        for(let k=1; k<=n; k++){
+            const xk = a+k*h;
+            if(k<=n-1) sum1 += f(xk);
+            const xk_1 = a+(k-1)*h;
+            sum2 += f((xk+xk_1)/2);
+        }
+        return (h/3) * (0.5*f(a)+sum1+2*sum2+0.5*f(b));
+    };
+    bisect = (f, a, b, e) => {
+        let middle = (a+b)/2;
+        while((b-a)>=2*e){
+            if(f(a)*f(middle) < 0) b = middle;
+            else a = middle;        
+            middle = (a+b)/2;
+        }
+        return middle;
+    };
 	calculation = () => {
 		const {N,P,Xmin,Xmax,step,A,D} = this.state;
         let binom_quantiles = {}, norm_quantiles = {};
@@ -108,7 +128,7 @@ class Lab2 extends Component {
         }
         for(let q=0.05; q<1; q+=0.05){
             binom_quantiles[q.toFixed(2)] = this.findBinomialQuantile(N, P, q);
-            norm_quantiles[q.toFixed(2)] = A+(D*this.findStandardNormalQuantile(q));
+            norm_quantiles[q.toFixed(2)] = this.bisect((x) => this.simpson((x) => (1 / (D * Math.sqrt(2 * Math.PI))) * Math.exp(-Math.pow(x - A, 2) / (2 * D * D)), -30.0, x, 1000) - q, -50.0, 100.0, 1e-4);
         }
 		this.setState({binom,binom_quantiles,norm,norm_quantiles});
 	}
@@ -146,7 +166,7 @@ class Lab2 extends Component {
                                 <th className="table-cell">F(X=x)</th>
                             </tr>
                         :   <tr>
-                                <th className="table-cell">X</th>
+                                <th className="table-cell">t(p)</th>
                                 <th className="table-cell">p</th>
                             </tr>}
                     </thead>
@@ -159,8 +179,8 @@ class Lab2 extends Component {
                             </tr>
                         )) : Object.keys(table).map((item, index) => (
                             <tr key={index}>
-                                <td className="table-cell">{item}</td>
                                 <td className="table-cell">{table[item].toFixed(10)}</td>
+                                <td className="table-cell">{item}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -182,7 +202,7 @@ class Lab2 extends Component {
                             backgroundColor: 'rgba(138,43,226,0.2)',
                             fill: false
                         }]}}/>
-                    : <Line options={options} data={{
+                    : <Bar options={options} data={{
                         labels: type === 'distribution' ? table.map(item => item.x) : Object.keys(table),
                         datasets: [
                             {
