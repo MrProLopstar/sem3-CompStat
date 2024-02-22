@@ -64,21 +64,15 @@ class Lab2 extends Component {
     };
     
     findBinomialQuantile = (n, p, q) => {
-      let cumulativeProbability = 0;
-      let x = 0;
+      let cumulativeProbability = 0, x = 0;
       for(x=0; x<=n; x++){
         cumulativeProbability = this.binomialCDF(n,p,x);
         if(cumulativeProbability>=q) break;
       }
       return x;
     };
-    findStandardNormalQuantile = (p) => {
-        if(p<=0 || p>=1) throw new Error('p must be between 0 and 1');
-        const z = Math.sqrt(2) * erf(2*p-1);
-        return z;
-    };
     simpson = (f, a, b, n) => {
-        const h = (b - a) / n;
+        const h = (b-a)/n;
         let sum1 = 0, sum2 = 0;
         for(let k=1; k<=n; k++){
             const xk = a+k*h;
