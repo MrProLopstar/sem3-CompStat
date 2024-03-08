@@ -4,7 +4,7 @@ import { Icon24Back } from '@vkontakte/icons';
 import { getState, dispatch } from '../main.jsx';
 import { goBack } from '../store/router';
 import { v4 as uuidv4 } from 'uuid';
-import { Line, Bar } from 'react-chartjs-2';
+import { Line, Bar, Scatter } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -17,9 +17,7 @@ import {
   Legend,
   Filler
 } from 'chart.js';
-import { erf } from 'jstat';
-import { setPage } from '../store/router';
-import { setPageState } from '../store/app';
+import jStat from 'jstat';
 
 ChartJS.register(
   CategoryScale,
@@ -38,16 +36,14 @@ class Lab3 extends Component {
 		super(props);
 		this.state = {
 			select: 0,
-			N: 12,
-			a: 4,
+			M: 4,
+			N: 10,
+			n: 5,
 			//
-			n: 10,
-			p: 0.6,
-			el: 15,
+			alpha: 10,
+			beta: 0.6,
 			//
-			N_: 50,
-			M: 5,
-			S: 6,
+			sampleSize: 20,
 			arr: null
 		};
 	}
@@ -57,56 +53,51 @@ class Lab3 extends Component {
 		for(let i=2; i<=n; i++) result *= i;
 		return result;
 	};
-
-	calculation = () => {
-		const {select,N,a,n,p,el,N_,M,S} = this.state;
-		let itog = [];
-		if(select==0){
-			if(N<=0) return alert("Количество экспериментов должно быть больше нуля.");
-			else if (a<=0) return alert("Параметр 'a' должен быть больше нуля.");
-			let y0, k = 11, y = Math.random();
-			const inverseFunction = (a, y) => {return -Math.log(1 - y) / a};
-			itog.push({value: uuidv4(), label: inverseFunction(a, y)});
-			for(let i=1; i<N; i++){
-			  y0 = y;
-			  y = (k*y0)-Math.floor(k*y0);
-			  itog.push({value: uuidv4(), label: inverseFunction(a, y).toFixed(4).toString()});
-			}
-		} else if(select==1){
-			if(el<0) return alert("Переменная el должна быть больше нуля.");
-			else if(n<0) return alert("Переменная n должна быть больше нуля.");
-			else if(p<0 || p>1) return alert("Вероятность 'p' должна быть в диапазоне от 0 до 1.");
-			for(let i=0; i<el; i++){
-				let success = 0;
-				for(let j=0; j<n; j++) if(Math.random()<p) success++;
-				itog.push({ value: uuidv4(), label: success.toString() });
-			}
-		} else if(select==2){
-			if(N_<=0) return alert("Количество экспериментов должно быть больше нуля.");
-			else if(M<=0) return alert("Мат. ожидание должно быть больше нуля.");
-			else if(S<=0) return alert("Среднеквадратичное отклонение должно быть больше нуля.");
-			let ready = false;
-			let second = 0.0;
-			for(let i=0; i<N_; i++){
-				if(ready){
-					ready = false;
-					itog.push({ value: uuidv4(), label: (second*S+M).toFixed(4).toString() })
-				} else {
-					let u, v, s;
-					do {
-						u = 2.0*Math.random()-1.0;
-						v = 2.0*Math.random()-1.0;
-						s = u*u+v*v;
-					} while (s>1.0 || s==0.0);
-					const r = Math.sqrt(-2.0*Math.log(s)/s);
-					second = r*u;
-					ready = true;
-					itog.push({ value: uuidv4(), label: (r*v*S+M).toFixed(4).toString() });
-				}
-			}
-		}
-		this.setState({arr: itog});
+	Bernoulli(p) {
+		return Math.random() < p;
 	}
+
+	generateHyperGeometricSample = (N, n, K, sampleSize) => {
+        let sample = [];
+		for(let i=0; i<sampleSize; i++){
+			let sum = 0, p = K/N;
+			for(let j=1; j<=n; j++){
+				if(this.Bernoulli(p)){
+					sum++;
+					if(sum===K) break;
+				}
+				p = (K-sum)/(N-j);
+			}
+			sample.push(sum);
+		}
+		return sample;
+    };
+
+    generateBetaSample = (alpha, beta, sampleSize) => {
+		let sample = [];
+		for(let i=0; i<sampleSize; i++){
+			let x = jStat.gamma.sample(alpha, 1);
+			let y = jStat.gamma.sample(beta, 1);
+			sample.push(x/(x+y));
+		}
+		return sample;
+	};
+
+    calculation = () => {
+		const {select, M, N, n, alpha, beta, sampleSize} = this.state;
+		let itog = [];
+	
+		if(select===0){
+			if(n>N || M>N || M>n) return alert('Параметры n и M должны быть меньше или равны N, и M не должно превышать n.');
+			itog = this.generateHyperGeometricSample(N, n, M, sampleSize);
+		} else if(select===1){
+			if(alpha<=0 || beta<=0) return alert('Параметры α и β должны быть больше нуля.');
+			itog = this.generateBetaSample(alpha, beta, sampleSize);
+		}
+
+		let formattedSample = itog.map(value => ({ value: uuidv4(), label: value.toFixed(4).toString() }));
+		this.setState({ arr: formattedSample, renderKey: Math.random() });
+	};
 
 	getStatisticalSeries = (arr) => {
 		if(!arr) return;
@@ -166,7 +157,7 @@ class Lab3 extends Component {
 
 	render(){
 		const {title} = getState().app;
-		const {select,N,a,n,p,el,N_,M,S,arr} = this.state;	
+		const {select,M,N,n,alpha,beta,arr,renderKey,sampleSize} = this.state;
 		const sortedArr = arr?.slice().sort((a, b) => parseFloat(a.label) - parseFloat(b.label));
 		const statisticalSeries = this.getStatisticalSeries(sortedArr);
 		const groupedStatisticalSeries = this.getGroupedStatisticalSeries(arr);			
@@ -205,11 +196,26 @@ class Lab3 extends Component {
 				}
 			}
 		};
-		const titles = ['Экспонециальный закон','Биномиальный закон','Нормальный закон'];
+		const scatterData = {
+			datasets: [{
+				// Устанавливаем тип диаграммы как 'scatter'
+				type: 'scatter',
+				label: 'Бета-распределение',
+				// Координаты точек на диаграмме
+				data: arr ? arr.map((item, index) => ({
+					x: index, // Или другое значение, если оно у вас есть
+					y: parseFloat(item.label)
+				})) : [],
+				backgroundColor: 'rgba(75,192,192,0.6)',
+				borderColor: 'rgba(75,192,192,1)',
+				borderWidth: 1
+			}]
+		};
+		const titles = ['Гипергеометрический закон','Бета закон'];
 		return (
 			<Panel>
 				<PanelHeader before={<Icon24Back onClick={() => dispatch(goBack())}/>}>{title}</PanelHeader>
-				{select==0 ? (
+				{select==1 ? (
 					<FormLayoutGroup mode="horizontal" segmented>
 						<FormItem top="Найти значения для">
 							<Select
@@ -218,57 +224,22 @@ class Lab3 extends Component {
 									label: i,
 									value: index,
 								}))}
-								onChange={({target}) => this.setState({select: target.value})}
+								onChange={({target}) => this.setState({select: target.value==='' ? 0 : parseInt(target.value, 10)})}
 							/>
 						</FormItem>
-						<FormItem top='a:'>
+						<FormItem top='α:'>
 							<Input
-								value={a}
-								onChange={({target}) => this.setState({a: target.value})}
+								value={alpha}
+								onChange={({ target }) => this.setState({alpha: target.value==='' ? 0 : parseInt(target.value, 10)})}
 							/>
 						</FormItem>
-						<FormItem top='N:'>
+						<FormItem top='β:'>
 							<Input
-								value={N}
-								onChange={({target}) => this.setState({N: target.value})}
+								value={beta}
+								onChange={({ target }) => this.setState({beta: target.value==='' ? 0 : parseInt(target.value, 10)})}
 							/>
 						</FormItem>
 					</FormLayoutGroup>
-				) : (select==1 ? (
-					<div>
-						<FormLayoutGroup mode="horizontal" segmented>
-							<FormItem top="Найти значения для">
-								<Select
-									value={select}
-									options={titles.map((i,index) => ({
-										label: i,
-										value: index,
-									}))}
-									onChange={({target}) => this.setState({select: target.value})}
-								/>
-							</FormItem>
-							<FormItem top='Кол-во испытаний:'>
-								<Input
-									value={n}
-									onChange={({target}) => this.setState({n: target.value})}
-								/>
-							</FormItem>
-						</FormLayoutGroup>
-						<FormLayoutGroup mode="horizontal" segmented>
-							<FormItem top='Введите вероятность p:'>
-								<Input
-									value={p}
-									onChange={({target}) => this.setState({N: target.value})}
-								/>
-							</FormItem>
-							<FormItem top='Введите количество элементов:'>
-								<Input
-									value={el}
-									onChange={({target}) => this.setState({el: target.value})}
-								/>
-							</FormItem>
-						</FormLayoutGroup>
-					</div>
 				) : (
 					<div>
 						<FormLayoutGroup mode="horizontal" segmented>
@@ -279,32 +250,37 @@ class Lab3 extends Component {
 										label: i,
 										value: index,
 									}))}
-									onChange={({target}) => this.setState({select: target.value})}
+									onChange={({target}) => this.setState({select: target.value==='' ? 0 : parseInt(target.value, 10)})}
 								/>
 							</FormItem>
-							<FormItem top='N:'>
+							<FormItem top='Размер совокупности N:'>
 								<Input
-									value={N_}
-									onChange={({target}) => this.setState({N_: target.value})}
+									value={N}
+									onChange={({ target }) => this.setState({N: target.value==='' ? 0 : parseInt(target.value, 10)})}
 								/>
 							</FormItem>
 						</FormLayoutGroup>
 						<FormLayoutGroup mode="horizontal" segmented>
-							<FormItem top='M:'>
+							<FormItem top='Количество "успехов" в совокупности M:'>
 								<Input
 									value={M}
-									onChange={({target}) => this.setState({M: target.value})}
+									onChange={({ target }) => this.setState({M: target.value==='' ? 0 : parseInt(target.value, 10)})}
 								/>
 							</FormItem>
-							<FormItem top='S:'>
+							<FormItem top='Размер выборки n:'>
 								<Input
-									value={S}
-									onChange={({target}) => this.setState({S: target.value})}
+									value={n}
+									onChange={({ target }) => this.setState({n: target.value==='' ? 0 : parseInt(target.value, 10)})}
 								/>
 							</FormItem>
 						</FormLayoutGroup>
 					</div>
-				))}
+				)}
+				<FormItem top='Размер выборки:'><Input
+					align='center'
+					value={sampleSize}
+					onChange={({ target }) => this.setState({sampleSize: target.value==='' ? 0 : parseInt(target.value, 10)})}
+				/></FormItem>
 				<FormItem><Button rounded stretched onClick={this.calculation}>Рассчёт</Button></FormItem>
 				{arr && (
 					<div>
@@ -312,6 +288,7 @@ class Lab3 extends Component {
 							<ChipsInput
 								disabled
 								value={arr}
+								key={renderKey}
 								//onChange={this.handleChipChange}
 							/>
 				  		</FormItem>
@@ -319,6 +296,7 @@ class Lab3 extends Component {
 						<ChipsInput
 					  		disabled
 					  		value={sortedArr}
+							key={renderKey}
 						/>
 				  		</FormItem>
 				  		<FormItem top='Статистический ряд'>
@@ -386,6 +364,24 @@ class Lab3 extends Component {
 								</FormItem>
 							</FormLayoutGroup>
 						))}
+						<FormItem top='Диаграмма рассеивания бета-распределения'>
+							<Scatter data={scatterData} options={{
+								scales: {
+									x: {
+										title: {
+											display: true,
+											text: 'Индекс выборки'
+										}
+									},
+									y: {
+										title: {
+											display: true,
+											text: 'Значение'
+										}
+									}
+								}
+							}} />
+						</FormItem>
 					</div>
 				)}
 			</Panel>
