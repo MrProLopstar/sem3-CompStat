@@ -293,11 +293,11 @@ class Lab3 extends Component {
 							/>
 				  		</FormItem>
 				  		<FormItem top='Вариационный ряд'>
-						<ChipsInput
-					  		disabled
-					  		value={sortedArr}
-							key={renderKey}
-						/>
+							<ChipsInput
+								disabled
+								value={sortedArr}
+								key={renderKey}
+							/>
 				  		</FormItem>
 				  		<FormItem top='Статистический ряд'>
 							<table style={{ borderCollapse: 'collapse', width: '100%' }}>
@@ -326,8 +326,6 @@ class Lab3 extends Component {
 								<thead>
 									<tr>
 										<th className="table-cell">№</th>
-										<th className="table-cell">Нижняя Граница</th>
-										<th className="table-cell">Верхняя Граница</th>
 										<th className="table-cell">Середина</th>
 										<th className="table-cell">Частота</th>
 										<th className="table-cell">Накопленная частота</th>
@@ -339,8 +337,6 @@ class Lab3 extends Component {
 									{groupedStatisticalSeries.map((item, index) => (
 										<tr key={index}>
 											<td className="table-cell">{item.number}</td>
-											<td className="table-cell">{item.lowerBoundary}</td>
-											<td className="table-cell">{item.upperBoundary}</td>
 											<td className="table-cell">{item.midpoint}</td>
 											<td className="table-cell">{item.frequency}</td>
 											<td className="table-cell">{item.accumulatedFrequency}</td>
