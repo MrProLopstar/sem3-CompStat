@@ -20,15 +20,15 @@ import {
 import { erf } from 'jstat';
 
 ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-	BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+    Filler
 );
 
 class Lab2 extends Component {
@@ -94,7 +94,6 @@ class Lab2 extends Component {
 	calculation = () => {
 		const {N,P,Xmin,Xmax,step,A,D} = this.state;
         let binom_quantiles = {}, norm_quantiles = {};
-        console.log(Xmin,Xmax)
 		let binom = [], norm = [];
 		let binomTotal = 0;
         if(N<=0 || P<=0 || P>=1) return alert("Ошибка инициализации входных данных, проверьте выполнимость условий: N>0 и 0 < P < 1");

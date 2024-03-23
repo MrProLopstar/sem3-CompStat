@@ -53,8 +53,8 @@ class Lab3 extends Component {
 		for(let i=2; i<=n; i++) result *= i;
 		return result;
 	};
-	Bernoulli(p) {
-		return Math.random() < p;
+	Bernoulli(p){
+		return Math.random()<p;
 	}
 
 	generateHyperGeometricSample = (N, n, K, sampleSize) => {
@@ -83,6 +83,10 @@ class Lab3 extends Component {
 		return sample;
 	};
 
+	resizeLength = (value, length) => {
+		return (value.toString().split('.')[1] || '').length>length ? value.toFixed(4).toString() : value.toString()
+	}
+
     calculation = () => {
 		const {select, M, N, n, alpha, beta, sampleSize} = this.state;
 		let itog = [];
@@ -94,8 +98,7 @@ class Lab3 extends Component {
 			if(alpha<=0 || beta<=0) return alert('Параметры α и β должны быть больше нуля.');
 			itog = this.generateBetaSample(alpha, beta, sampleSize);
 		}
-
-		let formattedSample = itog.map(value => ({ value: uuidv4(), label: value.toFixed(4).toString() }));
+		let formattedSample = itog.map(value => ({ value: uuidv4(), label: this.resizeLength(value,4) }));
 		this.setState({ arr: formattedSample, renderKey: Math.random() });
 	};
 
@@ -115,45 +118,32 @@ class Lab3 extends Component {
 	}
 
 	getGroupedStatisticalSeries = (arr) => {
-		if(!arr) return;
-		const length = arr.length;
-		const k = Math.ceil(1+3.32*Math.log10(length));
-		const max = Math.max(...arr.map(x => parseFloat(x.label)));
-		const min = Math.min(...arr.map(x => parseFloat(x.label)));
-		const b = (max-min)/k;
+		if (!arr) return;
+		const frequencyMap = arr.reduce((acc, current) => {
+		  const value = parseFloat(current.label).toFixed(6);
+		  acc[value] = (acc[value] || 0) + 1;
+		  return acc;
+		}, {});
+		let accumulatedFrequency = 0;
 
-		let boundaries = Array.from({ length: k+1 }, (_, i) => min+i*b);
-		let frequencies = new Array(k).fill(0);
-		let accumulatedFrequencies = 0;
-		let accumulatedRelativeFrequencies = 0;
-
-		for(let value of arr){
-			let val = parseFloat(value.label);
-			let index = Math.min(Math.floor((val-min)/b), k - 1);
-			frequencies[index]++;
-		}
-
-		let series = boundaries.slice(1).map((upperBoundary, index) => {
-			let lowerBoundary = boundaries[index];
-			let frequency = frequencies[index];
-			accumulatedFrequencies += frequency;
-			let relativeFrequency = frequency / length;
-			accumulatedRelativeFrequencies += relativeFrequency;
-
+		const statisticalSeries = Object.entries(frequencyMap).sort((a, b) => parseFloat(a[0])-parseFloat(b[0]))
+		  .map(([value, frequency], index) => {
+			accumulatedFrequency += frequency;
+			const relativeFrequency = frequency/arr.length;
+			const accumulatedRelativeFrequency = accumulatedFrequency/arr.length;
+	  
 			return {
-				number: index+1,
-				lowerBoundary: lowerBoundary.toFixed(6),
-				upperBoundary: upperBoundary.toFixed(6),
-				midpoint: ((lowerBoundary+upperBoundary)/2).toFixed(6),
-				frequency,
-				accumulatedFrequency: accumulatedFrequencies,
-				relativeFrequency: relativeFrequency.toFixed(6),
-				accumulatedRelativeFrequency: accumulatedRelativeFrequencies.toFixed(6),
+			  index: index+1,
+			  value: this.resizeLength(Number(value), 6),
+			  frequency,
+			  accumulatedFrequency,
+			  relativeFrequency: this.resizeLength(relativeFrequency, 6),
+			  accumulatedRelativeFrequency: this.resizeLength(accumulatedRelativeFrequency, 6),
 			};
-		});
-
-		return series;
-	}
+		  });
+	  
+		return statisticalSeries;
+	  }
 
 	render(){
 		const {title} = getState().app;
@@ -163,7 +153,7 @@ class Lab3 extends Component {
 		const groupedStatisticalSeries = this.getGroupedStatisticalSeries(arr);			
 		function getPolygonChartData(data){
 			return {
-				labels: groupedStatisticalSeries.map(item => item.lowerBoundary+'-'+item.upperBoundary),
+				labels: groupedStatisticalSeries.map(item => item.value),
 				datasets: [
 					{
 						data,
@@ -198,12 +188,10 @@ class Lab3 extends Component {
 		};
 		const scatterData = {
 			datasets: [{
-				// Устанавливаем тип диаграммы как 'scatter'
 				type: 'scatter',
-				label: 'Бета-распределение',
-				// Координаты точек на диаграмме
+				label: select===0 ? 'Гипергеометрический закон' : 'Бета-распределение',
 				data: arr ? arr.map((item, index) => ({
-					x: index, // Или другое значение, если оно у вас есть
+					x: index,
 					y: parseFloat(item.label)
 				})) : [],
 				backgroundColor: 'rgba(75,192,192,0.6)',
@@ -303,15 +291,15 @@ class Lab3 extends Component {
 							<table style={{ borderCollapse: 'collapse', width: '100%' }}>
 								<tbody>
 									<tr>
-										<th className="table-cell">Значение</th>
+										<th className="table-cell" width="200px">Значение</th>
 										{statisticalSeries.map((item, index) => (
 											<td key={`value-${index}`} className="table-cell">
-												{item.value}
+												{this.resizeLength(Number(item.value),6)}
 											</td>
 										))}
 									</tr>
 									<tr>
-										<th className="table-cell">Частота</th>
+										<th className="table-cell" width="200px">Частота</th>
 										{statisticalSeries.map((item, index) => (
 											<td key={`frequency-${index}`} className="table-cell">
 												{item.frequency}
@@ -326,7 +314,7 @@ class Lab3 extends Component {
 								<thead>
 									<tr>
 										<th className="table-cell">№</th>
-										<th className="table-cell">Середина</th>
+										<th className="table-cell">Значение</th>
 										<th className="table-cell">Частота</th>
 										<th className="table-cell">Накопленная частота</th>
 										<th className="table-cell">Относительная частота</th>
@@ -336,8 +324,8 @@ class Lab3 extends Component {
 								<tbody>
 									{groupedStatisticalSeries.map((item, index) => (
 										<tr key={index}>
-											<td className="table-cell">{item.number}</td>
-											<td className="table-cell">{item.midpoint}</td>
+											<td className="table-cell">{item.index}</td>
+											<td className="table-cell">{item.value}</td>
 											<td className="table-cell">{item.frequency}</td>
 											<td className="table-cell">{item.accumulatedFrequency}</td>
 											<td className="table-cell">{item.relativeFrequency}</td>
@@ -360,8 +348,8 @@ class Lab3 extends Component {
 								</FormItem>
 							</FormLayoutGroup>
 						))}
-						<FormItem top='Диаграмма рассеивания бета-распределения'>
-							<Scatter data={scatterData} options={{
+						<FormItem top='Диаграмма рассеивания распределения'>
+							<Scatter height='50%' data={scatterData} options={{
 								scales: {
 									x: {
 										title: {
