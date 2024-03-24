@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Panel, PanelHeader, FormItem, ChipsInput, FormLayoutGroup, Input, Select, Button } from '@vkontakte/vkui';
+import { Panel, PanelHeader, FormItem, ChipsInput, FormLayoutGroup, Input, Select, Button, Separator, Slider } from '@vkontakte/vkui';
 import { Icon24Back } from '@vkontakte/icons';
 import { getState, dispatch } from '../main.jsx';
 import { goBack } from '../store/router';
@@ -43,27 +43,104 @@ class Lab2 extends Component {
 			alpha: 10,
 			beta: 0.6,
 			//
+			percent: 0.9,
 			sampleSize: 20,
+			//
+			lambdaMin: 0,
+			lambda: 0,
+			lambdaMax: 0,
 			arr: null
 		};
 	}
 
-  calculation = () => {
-    const {select, M, N, n, alpha, beta, sampleSize} = this.state;
-    let itog = [];
+	factorial = (n) => {
+		let result=1;
+		for(let i=2; i<=n; i++) result *= i;
+		return result;
+	};
+	Bernoulli(p){
+		return Math.random()<p;
+	}
 
-    if(select===0){
-      
-    } else if(select===1){
-      
-    }
+	generateHyperGeometricSample = (N, n, K, sampleSize) => {
+        let sample = [];
+		for(let i=0; i<sampleSize; i++){
+			let sum = 0, p = K/N;
+			for(let j=1; j<=n; j++){
+				if(this.Bernoulli(p)){
+					sum++;
+					if(sum===K) break;
+				}
+				p = (K-sum)/(N-j);
+			}
+			sample.push(sum);
+		}
+		return sample;
+    };
 
-    this.setState({ arr: itog, renderKey: Math.random() });
-  };
+    generateBetaSample = (alpha, beta, sampleSize) => {
+		let sample = [];
+		for(let i=0; i<sampleSize; i++){
+			let x = jStat.gamma.sample(alpha, 1);
+			let y = jStat.gamma.sample(beta, 1);
+			sample.push(x/(x+y));
+		}
+		return sample;
+	};
+
+	resizeLength = (value, length) => {
+		return (value.toString().split('.')[1] || '').length>length ? value.toFixed(4).toString() : value.toString()
+	}
+
+    calculation = () => {
+		const { select, M, N, n, alpha, beta, sampleSize, percent } = this.state;
+		let sample = [];
+		let itog = {};
+		
+		if (select === 0) {
+			if (n > N || M > N || M > n) return alert('Параметры n и M должны быть меньше или равны N, и M не должно превышать n.');
+			sample = this.generateHyperGeometricSample(N, n, M, sampleSize);
+			itog = this.calculateEstimates(sample, percent);
+		} else if (select === 1) {
+			if (alpha <= 0 || beta <= 0) return alert('Параметры α и β должны быть больше нуля.');
+			sample = this.generateBetaSample(alpha, beta, sampleSize);
+			itog = this.calculateEstimates(sample, percent);
+		}
+	
+		let formattedSample = sample.map(value => ({ value: uuidv4(), label: this.resizeLength(value, 4) }));
+		this.setState({
+			arr: formattedSample,
+			renderKey: Math.random(),
+			min: itog.min,
+			max: itog.max,
+			lambda: itog.lambda
+		});
+	};
+	
+	calculateEstimates = (sample, percent) => {
+		const mean = sample.reduce((acc, val) => acc + val, 0) / sample.length;
+		const variance = sample.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / (sample.length - 1);
+		const standardError = Math.sqrt(variance / sample.length);
+		const zValues = {
+		'90': 1.645,
+		'95': 1.96,
+		'99': 2.576
+		};
+		const z = zValues[percent.toString()];
+		const marginOfError = z * standardError;
+	
+		return {
+		min: mean - marginOfError,
+		max: mean + marginOfError,
+		lambda: mean
+		};
+	};
 
 	render(){
 		const {title} = getState().app;
-		const {select,M,N,n,alpha,beta,arr,renderKey,sampleSize} = this.state;
+		const {select,M,N,n,alpha,beta,arr,renderKey,percent,sampleSize,min,max,lambda} = this.state;
+		console.log(arr,min,max,lambda)
+		const sortedArr = arr?.slice().sort((a, b) => parseFloat(a.label) - parseFloat(b.label));
 		const titles = ['Гипергеометрический закон','Бета закон'];
 		return (
 			<Panel>
@@ -129,12 +206,42 @@ class Lab2 extends Component {
 						</FormLayoutGroup>
 					</div>
 				)}
+				<FormItem top={'Процент выборки: '+percent}><Slider
+					step={0.05}
+					min={0.9}
+					max={0.99}
+					withTooltip
+					value={percent}
+					aria-labelledby="basic"
+					onChange={(value) => this.setState({percent: Number(value)})}
+				/></FormItem>
 				<FormItem top='Размер выборки:'><Input
 					align='center'
 					value={sampleSize}
 					onChange={({ target }) => this.setState({sampleSize: target.value==='' ? 0 : parseInt(target.value, 10)})}
 				/></FormItem>
 				<FormItem><Button rounded stretched onClick={this.calculation}>Рассчёт</Button></FormItem>
+				<Separator/>
+				<FormItem><Button rounded stretched onClick={this.normal}>Рассчёт Нормального распределения</Button></FormItem>
+				{arr && (
+					<div>
+						<FormItem top='Изначальный массив'>
+							<ChipsInput
+								disabled
+								value={arr}
+								key={renderKey}
+								//onChange={this.handleChipChange}
+							/>
+				  		</FormItem>
+				  		<FormItem top='Вариационный ряд'>
+							<ChipsInput
+								disabled
+								value={sortedArr}
+								key={renderKey}
+							/>
+				  		</FormItem>
+					</div>
+				)}
 			</Panel>
 		);
 	}
