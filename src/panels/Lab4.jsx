@@ -5,6 +5,7 @@ import { getState, dispatch } from '../main.jsx';
 import { goBack } from '../store/router';
 import { v4 as uuidv4 } from 'uuid';
 import { Line, Bar } from 'react-chartjs-2';
+import norm from '../data/lab1.json';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -17,7 +18,7 @@ import {
   Legend,
   Filler
 } from 'chart.js';
-import { erf } from 'jstat';
+import jStat, { erf } from 'jstat';
 
 ChartJS.register(
   CategoryScale,
@@ -94,52 +95,103 @@ class Lab2 extends Component {
 
     calculation = () => {
 		const { select, M, N, n, alpha, beta, sampleSize, percent } = this.state;
-		let sample = [];
-		let itog = {};
+		let sample = [], estimates = {};
 		
 		if (select === 0) {
 			if (n > N || M > N || M > n) return alert('Параметры n и M должны быть меньше или равны N, и M не должно превышать n.');
 			sample = this.generateHyperGeometricSample(N, n, M, sampleSize);
-			itog = this.calculateEstimates(sample, percent);
+			estimates = this.calculateEstimates(sample,(percent*100).toFixed(0));
 		} else if (select === 1) {
 			if (alpha <= 0 || beta <= 0) return alert('Параметры α и β должны быть больше нуля.');
 			sample = this.generateBetaSample(alpha, beta, sampleSize);
-			itog = this.calculateEstimates(sample, percent);
+			console.log(this.calculateBetaEstimates(alpha, beta, percent));
 		}
 	
 		let formattedSample = sample.map(value => ({ value: uuidv4(), label: this.resizeLength(value, 4) }));
 		this.setState({
 			arr: formattedSample,
 			renderKey: Math.random(),
-			min: itog.min,
-			max: itog.max,
-			lambda: itog.lambda
+			...estimates
+		});
+	};
+
+	calculateBetaEstimates = (sample, alpha, beta, percent) => {
+		const mean = jStat.mean(sample);
+		const variance = jStat.variance(sample);
+		
+		const alphaHat = mean * ((mean * (1 - mean)) / variance - 1);
+		const betaHat = (1 - mean) * ((mean * (1 - mean)) / variance - 1);
+
+		const standardErrorAlpha = /* расчет стандартной ошибки для альфа */;
+		const standardErrorBeta = /* расчет стандартной ошибки для бета */;
+	  
+		const z = jStat.normal.inv(1 - percent / 2, 0, 1);
+	  
+		const alphaInterval = [
+		  alphaHat - z * standardErrorAlpha,
+		  alphaHat + z * standardErrorAlpha
+		];
+		const betaInterval = [
+		  betaHat - z * standardErrorBeta,
+		  betaHat + z * standardErrorBeta
+		];
+	  
+		return {
+		  alpha: alphaHat,
+		  beta: betaHat,
+		  alphaConfidenceInterval: alphaInterval,
+		  betaConfidenceInterval: betaInterval
+		};
+	  };
+
+	calculateNormalEstimates = () => {
+		const { sampleSize } = this.state;
+		const sample = norm.slice(0, sampleSize);
+
+		const mean = sample.reduce((acc, val) => acc + val, 0) / sample.length;
+		const variance = sample.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / (sample.length - 1);
+		
+		const zValues = {
+			'0.9': 1.645,
+			'0.95': 1.96,
+			'0.99': 2.576
+		};
+	
+		const intervalEstimates = this.calculateEstimates(sample, this.state.percent * 100);
+		
+		this.setState({
+			lambdaMin: intervalEstimates.min,
+			lambda: intervalEstimates.lambda,
+			lambdaMax: intervalEstimates.max
 		});
 	};
 	
 	calculateEstimates = (sample, percent) => {
 		const mean = sample.reduce((acc, val) => acc + val, 0) / sample.length;
-		const variance = sample.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / (sample.length - 1);
-		const standardError = Math.sqrt(variance / sample.length);
-		const zValues = {
-		'90': 1.645,
-		'95': 1.96,
-		'99': 2.576
-		};
-		const z = zValues[percent.toString()];
+		const standardError = Math.sqrt(sample.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / (sample.length - 1)) / Math.sqrt(sample.length);
+		const z = {
+			'90': 1.645,
+			'95': 1.96,
+			'99': 2.576
+		}[percent];
+	
 		const marginOfError = z * standardError;
 	
 		return {
-		min: mean - marginOfError,
-		max: mean + marginOfError,
-		lambda: mean
+			min: mean - marginOfError,
+			max: mean + marginOfError,
+			lambda: mean
 		};
+	};
+	
+	normal = () => {
+		this.calculateNormalEstimates();
 	};
 
 	render(){
 		const {title} = getState().app;
 		const {select,M,N,n,alpha,beta,arr,renderKey,percent,sampleSize,min,max,lambda} = this.state;
-		console.log(arr,min,max,lambda)
+		console.log(min,max,lambda)
 		const sortedArr = arr?.slice().sort((a, b) => parseFloat(a.label) - parseFloat(b.label));
 		const titles = ['Гипергеометрический закон','Бета закон'];
 		return (
