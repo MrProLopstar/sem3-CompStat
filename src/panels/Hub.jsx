@@ -19,7 +19,7 @@ class Main extends Component {
     return(
       <Panel>
 				<PanelHeader>Лабораторные работы Гостяева Ярослава</PanelHeader>
-        {new Array(5).fill(0).map((x,i) => (
+        {new Array(6).fill(0).map((x,i) => (
           <Button key={i+1} onClick={() => {
             console.log(i)
             dispatch(setPage(['labs','lab'+(i+1)]));
