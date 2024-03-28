@@ -248,6 +248,7 @@ class Lab5 extends Component {
 
     this.setState({
       intervals: null,
+      renderKey: Math.random(),
       sample: sample.map(value => ({ value: uuidv4(), label: value.toString() })),
       chiSquare,
       chiSquareCritical,
@@ -264,7 +265,7 @@ class Lab5 extends Component {
   };
 
   createChartData = (observedFrequencies, expectedFrequencies) => {
-    const labels = observedFrequencies.map((_, index) => `Значение ${index}`);
+    const labels = observedFrequencies.map((_, index) => `Значение ${index+1}`);
     return {
       labels: labels,
       datasets: [
@@ -377,7 +378,7 @@ class Lab5 extends Component {
             <FormItem top='Вариационный ряд'>
             <ChipsInput
               disabled
-              value={sortedArr}
+              value={sample.slice().sort((a, b) => parseFloat(a.label) - parseFloat(b.label))}
               key={renderKey}
             />
             </FormItem>
