@@ -20,8 +20,7 @@ class Main extends Component {
       <Panel>
 				<PanelHeader>Лабораторные работы Гостяева Ярослава</PanelHeader>
         {new Array(6).fill(0).map((x,i) => (
-          <Button key={i+1} onClick={() => {
-            console.log(i)
+          <Button key={i+1} mode={i%2==0 ? 'primary' : 'secondary'} onClick={() => {
             dispatch(setPage(['labs','lab'+(i+1)]));
             dispatch(setPageState({title: 'Лабораторная работа №'+(i>1 ? (i==2 ? `2 (V2)` : i) : i+1), arr: i==0 ? lab1 : null}));
           }} style={{margin:5}}>Лабораторная работа №{i>1 ? (i==2 ? `2 (V2)` : i) : i+1}</Button>
