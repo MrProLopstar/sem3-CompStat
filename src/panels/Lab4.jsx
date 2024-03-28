@@ -32,7 +32,7 @@ ChartJS.register(
   Filler
 );
 
-class Lab2 extends Component {
+class Lab4 extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -145,12 +145,12 @@ class Lab2 extends Component {
 	  
 		const z = jStat.normal.inv(1-percent/2, 0, 1);
 		const alphaInterval = [
-		  alphaHat - z * standardError,
-		  alphaHat + z * standardError
+		  alphaHat-z*standardError,
+		  alphaHat+z*standardError
 		];
 		const betaInterval = [
-		  betaHat - z * standardError,
-		  betaHat + z * standardError
+		  betaHat-z*standardError,
+		  betaHat+z*standardError
 		];
 		
 		return {
@@ -175,7 +175,7 @@ class Lab2 extends Component {
 		const confidenceLevel = percent;
 		const zValue = jStat.normal.inv(1-(1-confidenceLevel)/2, 0, 1);
 		const marginOfError = zValue*(stdDeviation/Math.sqrt(sample.length));
-		const confidenceInterval = [mean - marginOfError, mean + marginOfError];
+		const confidenceInterval = [mean-marginOfError, mean+marginOfError];
 	  
 		const answer = `Среднее значение показателя динамометрии кисти: ${mean.toFixed(3)} кг/масса тела.\n` +
 					   `С вероятностью alpha = ${(confidenceLevel * 100).toFixed(0)}% данный показатель находится в пределах ${confidenceInterval[0].toFixed(3)} < показатель < ${confidenceInterval[1].toFixed(3)}.\n` +
@@ -293,4 +293,4 @@ class Lab2 extends Component {
 	}
 }
 
-export default Lab2;
+export default Lab4;

@@ -265,7 +265,7 @@ class Lab5 extends Component {
   };
 
   createChartData = (observedFrequencies, expectedFrequencies) => {
-    const labels = observedFrequencies.map((_, index) => `Значение ${index+1}`);
+    const labels = observedFrequencies.map((_, index) => `Интервал ${index+1}`);
     return {
       labels: labels,
       datasets: [
