@@ -68,65 +68,93 @@ class Lab5 extends Component {
     return { JB, skewness, kurtosis };
   };
     
-  handleFirstTask = () => {
-    const { arr } = this.state;
-    const sample = arr.map(item => parseFloat(item.label));
-    const { JB, skewness, kurtosis } = this.calculateJarqueBera(sample);
-    const chiSquareQuantile = jStat.chisquare.inv(1-0.05, 2);
-
-    let answer = `Задание 1. С помощью критерия Харке - Бера проверить свою выборку на нормальное распределение генеральной совокупности. \n` +
-                  `Выборочная асимметрия Sk = ${skewness.toFixed(4)}\n` +
-                  `Выборочный эксцесс Kur = ${kurtosis.toFixed(4)}\n` +
-                  `Значение выборочной статистики JB = ${JB.toFixed(4)}\n` +
-                  `Квантиль χ² (1-α)(2) = ${chiSquareQuantile.toFixed(4)} при α = 0.05\n`;
-    if(JB<chiSquareQuantile) answer += `Нулевая гипотеза о нормальном распределении принимается, т.к. JB < χ² (1-α)(2)`;
-    else answer += `Нулевая гипотеза о нормальном распределении НЕ принимается, т.к. JB >= χ² (1-α)(2)`;
-
-    this.setState({ answer, intervals: null, chartData: null });
-  };
-
   handleThirdTask = () => {
     const { arr } = this.state;
     const sample = arr.map(item => parseFloat(item.label));
     const n = sample.length;
-    const min = jStat.min(sample);
-    const max = jStat.max(sample);
-    const range = max - min;
-    const l = Math.ceil(1 + 3.322 * Math.log10(n));
-    const h = range / l;
-
-    let intervals = [];
-    for (let i = 0; i < l; i++) {
-      const start = min + i * h;
-      const end = i === l - 1 ? max : start + h;
-      const count = sample.filter(x => (i === 0 ? x >= start && x < end : x > start && x <= end)).length;
-      intervals.push({ start, end, count });
-    }
-
     const mean = jStat.mean(sample);
     const stdDeviation = jStat.stdev(sample, true);
-    let chiSquare = 0;
-    intervals.forEach(interval => {
-      const z1 = (interval.start - mean) / stdDeviation;
-      const z2 = (interval.end - mean) / stdDeviation;
-      const p = jStat.normal.cdf(z2, 0, 1) - jStat.normal.cdf(z1, 0, 1);
-      const expected = n * p;
-      const chi = Math.pow(interval.count - expected, 2) / expected;
-      chiSquare += chi;
-
-      interval.expected = expected;
-      interval.chi = chi;
+    const min = Math.min(...sample);
+    const max = Math.max(...sample);
+    const range = max - min;
+    const numIntervals = Math.ceil(1 + 3.322 * Math.log10(n));
+    const intervalWidth = range / numIntervals;
+  
+    let intervals = [];
+    let cumulativeFiBuffer = 0;
+    let cumulativeFitBuffer = 0;
+    let diffSquaredBuffer = 0;
+    let chiSquareSum = 0;
+  
+    for (let i = 0; i < numIntervals; i++) {
+      const lowerBound = min + i * intervalWidth;
+      const upperBound = i === numIntervals - 1 ? max : lowerBound + intervalWidth;
+      const midpoint = (lowerBound + upperBound) / 2;
+      const fi = sample.filter(value => value >= lowerBound && (i === numIntervals - 1 ? value <= upperBound : value < upperBound)).length;
+      const Pm = jStat.normal.cdf(upperBound, mean, stdDeviation) - jStat.normal.cdf(lowerBound, mean, stdDeviation);
+      const fit = Pm * n;
+      const diffSquared = fi > 0 ? Math.pow(fi - fit, 2) / fit : 0;
+  
+      cumulativeFiBuffer += fi;
+      cumulativeFitBuffer += fit;
+      diffSquaredBuffer += diffSquared;
+  
+      if (cumulativeFiBuffer > 5 && cumulativeFitBuffer > 5) {
+        chiSquareSum += diffSquaredBuffer;
+        intervals.push({
+          lowerBound,
+          upperBound,
+          midpoint,
+          fi,
+          Pm,
+          fit,
+          cumulativeFi: cumulativeFiBuffer,
+          cumulativeFit: cumulativeFitBuffer,
+          diffSquared: diffSquaredBuffer
+        });
+        cumulativeFiBuffer = 0;
+        cumulativeFitBuffer = 0;
+        diffSquaredBuffer = 0;
+      } else if (i === numIntervals - 1) {  
+        intervals.push({
+          lowerBound,
+          upperBound,
+          midpoint,
+          fi,
+          Pm,
+          fit,
+          cumulativeFi: cumulativeFiBuffer,
+          cumulativeFit: cumulativeFitBuffer,
+          diffSquared: diffSquaredBuffer
+        });
+      } else {
+        intervals.push({
+          lowerBound,
+          upperBound,
+          midpoint,
+          fi,
+          Pm,
+          fit,
+          cumulativeFi: null,
+          cumulativeFit: null,
+          diffSquared: null
+        });
+      }
+    }
+    
+    const degreesOfFreedom = intervals.filter(interval => interval.cumulativeFi != null).length - 1;
+    const chiSquareCritical = jStat.chisquare.inv(1 - 0.05, degreesOfFreedom);
+    const hypothesisAccepted = chiSquareSum < chiSquareCritical;
+  
+    this.setState({
+      intervals: intervals,
+      chiSquare: chiSquareSum,
+      chiSquareCritical: chiSquareCritical,
+      hypothesisAccepted: hypothesisAccepted,
+      answer: `Значение критерия хи-квадрат: ${chiSquareSum.toFixed(4)}\n` +
+              `Критическое значение хи-квадрат: ${chiSquareCritical.toFixed(4)}\n` +
+              `Гипотеза о соответствии распределения нормальному: ${hypothesisAccepted ? 'принимается' : 'не принимается'}`  
     });
-
-    const chiSquareCritical = jStat.chisquare.inv(1 - 0.05, l - 1);
-    const hypothesisAccepted = chiSquare < chiSquareCritical;
-
-    let answer = `Задание 3. С помощью критерия хи-квадрат проверить свою выборку на нормальное распределение генеральной совокупности.\n` +
-                  `Значение критерия хи-квадрат: ${chiSquare.toFixed(4)}\n` +
-                  `Критическое значение хи-квадрат: ${chiSquareCritical.toFixed(4)}\n` +
-                  `Гипотеза о соответствии распределения нормальному: ${hypothesisAccepted ? 'принимается' : 'не принимается'}`;
-
-    this.setState({ answer, intervals, chartData: null });
   };
 
   renderFrequencyTable = (intervals) => {
@@ -136,19 +164,27 @@ class Lab5 extends Component {
           <tr>
             <th className="table-cell">Нижняя граница</th>
             <th className="table-cell">Верхняя граница</th>
+            <th className="table-cell">Середина</th>
             <th className="table-cell">Опытные частоты</th>
             <th className="table-cell">Вероятность попадания в интервал</th>
             <th className="table-cell">Теоретические частоты</th>
+            <th className="table-cell">Сложенные опытные частоты</th>
+            <th className="table-cell">Сложенные теоретические частоты</th>
+            <th className="table-cell">(nk - n*pk)^2/n*pk</th>
           </tr>
         </thead>
         <tbody>
           {intervals.map((interval, index) => (
             <tr key={index}>
-              <td className="table-cell">{interval.start.toFixed(2)}</td>
-              <td className="table-cell">{interval.end.toFixed(2)}</td>
-              <td className="table-cell">{interval.count}</td>
-              <td className="table-cell">{((interval.count / this.state.arr.length) * 100).toFixed(2)}%</td>
-              <td className="table-cell">{interval.expected.toFixed(2)}</td>
+              <td className="table-cell">{interval.lowerBound.toFixed(2)}</td>
+              <td className="table-cell">{interval.upperBound.toFixed(2)}</td>
+              <td className="table-cell">{interval.midpoint.toFixed(2)}</td>
+              <td className="table-cell">{interval.fi}</td>
+              <td className="table-cell">{(interval.Pm * 100).toFixed(2)}%</td>
+              <td className="table-cell">{interval.fit.toFixed(2)}</td>
+              <td className="table-cell">{interval.cumulativeFi ? interval.cumulativeFi.toFixed(2) : ''}</td>
+              <td className="table-cell">{interval.cumulativeFit ? interval.cumulativeFit.toFixed(2) : ''}</td>
+              <td className="table-cell">{interval.diffSquared ? interval.diffSquared.toFixed(4) : ''}</td>
             </tr>
           ))}
         </tbody>
@@ -157,19 +193,24 @@ class Lab5 extends Component {
   }
       
   renderFrequencyChart = (intervals) => {
+    const labels = intervals.map(interval => 
+      `${interval.lowerBound.toFixed(2)}-${interval.upperBound.toFixed(2)}`
+    );
+  
+    
     const chartData = {
-      labels: intervals.map(interval => `${interval.start.toFixed(2)}-${interval.end.toFixed(2)}`),
+      labels: labels,
       datasets: [
         {
-          label: 'Опытные частоты',
-          data: intervals.map(interval => interval.count),
+          label: 'Опытные частоты (f_i)',
+          data: intervals.map(interval => interval.fi),
           backgroundColor: 'rgba(255, 99, 132, 0.2)',
           borderColor: 'rgba(255, 99, 132, 1)',
           borderWidth: 1,
         },
         {
-          label: 'Теоретические частоты',
-          data: intervals.map(interval => interval.expected),
+          label: 'Теоретические частоты (f_i^t)',
+          data: intervals.map(interval => interval.fit),
           backgroundColor: 'rgba(54, 162, 235, 0.2)',
           borderColor: 'rgba(54, 162, 235, 1)',
           borderWidth: 1,
@@ -245,9 +286,71 @@ class Lab5 extends Component {
     const degreesOfFreedom = maxK - (select === 0 ? 2 : 1);
     const chiSquareCritical = jStat.chisquare.inv(1-0.05, degreesOfFreedom);
     const isHypothesisAccepted = chiSquare < chiSquareCritical;
+    let intervals = [];
+    let cumulativeFi = 0;
+    let cumulativeFit = 0;
+    let cumulativeDiffSquared = 0;
+    let chiSquareSum = 0;
+
+    observedFrequenciesArray.forEach((fi, i) => {
+      const fit = expectedFrequencies[i];
+      const diffSquared = fi > 0 ? Math.pow(fi - fit, 2) / fit : 0;
+  
+      cumulativeFi += fi;
+      cumulativeFit += fit;
+      cumulativeDiffSquared += diffSquared;
+  
+      if(cumulativeFi<5 || cumulativeFit<5){
+        intervals.push({
+          lowerBound: i,
+          upperBound: i + 1,
+          midpoint: i + 0.5,
+          fi,
+          Pm: fit / n, 
+          fit,
+          cumulativeFi: null,
+          cumulativeFit: null,
+          diffSquared: null
+        });
+      } else {
+        
+        chiSquareSum += cumulativeDiffSquared;
+        intervals.push({
+          lowerBound: i,
+          upperBound: i + 1,
+          midpoint: i + 0.5,
+          fi,
+          Pm: fit / n, 
+          fit,
+          cumulativeFi,
+          cumulativeFit,
+          diffSquared: cumulativeDiffSquared
+        });
+  
+        
+        cumulativeFi = 0;
+        cumulativeFit = 0;
+        cumulativeDiffSquared = 0;
+      }
+    });
+  
+    
+    if (cumulativeFi > 0 || cumulativeFit > 0) {
+      let lastNonEmptyIntervalIndex = intervals.length - 1;
+      while (lastNonEmptyIntervalIndex >= 0 && intervals[lastNonEmptyIntervalIndex].cumulativeFi === null) {
+        lastNonEmptyIntervalIndex--;
+      }
+      if (lastNonEmptyIntervalIndex >= 0) {
+        intervals[lastNonEmptyIntervalIndex].cumulativeFi += cumulativeFi;
+        intervals[lastNonEmptyIntervalIndex].cumulativeFit += cumulativeFit;
+        intervals[lastNonEmptyIntervalIndex].diffSquared += cumulativeDiffSquared;
+        chiSquareSum += cumulativeDiffSquared;
+      }
+    }
 
     this.setState({
       intervals: null,
+      inter: intervals,
       renderKey: Math.random(),
       sample: sample.map(value => ({ value: uuidv4(), label: value.toString() })),
       chiSquare,
@@ -262,6 +365,23 @@ class Lab5 extends Component {
               `Критическое значение Хи-квадрат: ${chiSquareCritical.toFixed(2)}\n` +
               `Гипотеза о соответствии распределению: ${isHypothesisAccepted ? 'Принята' : 'Отклонена'}`
     });
+  };
+    
+  handleFirstTask = () => {
+    const { arr } = this.state;
+    const sample = arr.map(item => parseFloat(item.label));
+    const { JB, skewness, kurtosis } = this.calculateJarqueBera(sample);
+    const chiSquareQuantile = jStat.chisquare.inv(1-0.05, 2);
+
+    let answer = `Задание 1. С помощью критерия Харке - Бера проверить свою выборку на нормальное распределение генеральной совокупности. \n` +
+                  `Выборочная асимметрия Sk = ${skewness.toFixed(4)}\n` +
+                  `Выборочный эксцесс Kur = ${kurtosis.toFixed(4)}\n` +
+                  `Значение выборочной статистики JB = ${JB.toFixed(4)}\n` +
+                  `Квантиль χ² (1-α)(2) = ${chiSquareQuantile.toFixed(4)} при α = 0.05\n`;
+    if(JB<chiSquareQuantile) answer += `Нулевая гипотеза о нормальном распределении принимается, т.к. JB < χ² (1-α)(2)`;
+    else answer += `Нулевая гипотеза о нормальном распределении НЕ принимается, т.к. JB >= χ² (1-α)(2)`;
+
+    this.setState({ answer, intervals: null, chartData: null });
   };
 
   createChartData = (observedFrequencies, expectedFrequencies) => {
@@ -285,7 +405,7 @@ class Lab5 extends Component {
 
 	render(){
 		const {title} = getState().app;
-		const {arr,renderKey,answer,intervals,select,chiSquare, chiSquareCritical, isHypothesisAccepted, chartData,n,N,P,lambda,sample} = this.state;
+		const {arr,renderKey,answer,intervals,select,inter,chiSquare, chiSquareCritical, isHypothesisAccepted, chartData,n,N,P,lambda,sample} = this.state;
 		const sortedArr = arr?.slice().sort((a, b) => parseFloat(a.label) - parseFloat(b.label));
     const titles = ['Биномиальный закон', 'Распределение Пуассона'];
 		return (
@@ -298,7 +418,7 @@ class Lab5 extends Component {
 								disabled
 								value={arr}
 								key={renderKey}
-								//onChange={this.handleChipChange}
+								
 							/>
 				  		</FormItem>
 				  		<FormItem top='Вариационный ряд'>
@@ -382,6 +502,7 @@ class Lab5 extends Component {
               key={renderKey}
             />
             </FormItem>
+            {this.renderFrequencyTable(inter)}
             <div className='chart-container'>
                 <Bar
                     data={chartData}
