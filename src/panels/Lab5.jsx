@@ -69,7 +69,7 @@ class Lab5 extends Component {
   };
     
   handleThirdTask = () => {
-    const { arr } = this.state;
+    const {arr} = this.state;
     const sample = arr.map(item => parseFloat(item.label));
     const n = sample.length;
     const mean = jStat.mean(sample);
@@ -86,20 +86,20 @@ class Lab5 extends Component {
     let diffSquaredBuffer = 0;
     let chiSquareSum = 0;
   
-    for (let i = 0; i < numIntervals; i++) {
+    for(let i=0; i<numIntervals; i++){
       const lowerBound = min + i * intervalWidth;
-      const upperBound = i === numIntervals - 1 ? max : lowerBound + intervalWidth;
-      const midpoint = (lowerBound + upperBound) / 2;
-      const fi = sample.filter(value => value >= lowerBound && (i === numIntervals - 1 ? value <= upperBound : value < upperBound)).length;
-      const Pm = jStat.normal.cdf(upperBound, mean, stdDeviation) - jStat.normal.cdf(lowerBound, mean, stdDeviation);
+      const upperBound = i === numIntervals-1 ? max : lowerBound + intervalWidth;
+      const midpoint = (lowerBound+upperBound)/2;
+      const fi = sample.filter(value => value>=lowerBound && (i===numIntervals-1 ? value<=upperBound : value<upperBound)).length;
+      const Pm = jStat.normal.cdf(upperBound, mean, stdDeviation)-jStat.normal.cdf(lowerBound, mean, stdDeviation);
       const fit = Pm * n;
-      const diffSquared = fi > 0 ? Math.pow(fi - fit, 2) / fit : 0;
+      const diffSquared = fi>0 ? Math.pow(fi - fit, 2) / fit : 0;
   
       cumulativeFiBuffer += fi;
       cumulativeFitBuffer += fit;
       diffSquaredBuffer += diffSquared;
   
-      if (cumulativeFiBuffer > 5 && cumulativeFitBuffer > 5) {
+      if(cumulativeFiBuffer>5 && cumulativeFitBuffer>5){
         chiSquareSum += diffSquaredBuffer;
         intervals.push({
           lowerBound,
@@ -115,31 +115,28 @@ class Lab5 extends Component {
         cumulativeFiBuffer = 0;
         cumulativeFitBuffer = 0;
         diffSquaredBuffer = 0;
-      } else if (i === numIntervals - 1) {  
-        intervals.push({
-          lowerBound,
-          upperBound,
-          midpoint,
-          fi,
-          Pm,
-          fit,
-          cumulativeFi: cumulativeFiBuffer,
-          cumulativeFit: cumulativeFitBuffer,
-          diffSquared: diffSquaredBuffer
-        });
-      } else {
-        intervals.push({
-          lowerBound,
-          upperBound,
-          midpoint,
-          fi,
-          Pm,
-          fit,
-          cumulativeFi: null,
-          cumulativeFit: null,
-          diffSquared: null
-        });
-      }
+      } else if(i===numIntervals-1) intervals.push({
+        lowerBound,
+        upperBound,
+        midpoint,
+        fi,
+        Pm,
+        fit,
+        cumulativeFi: cumulativeFiBuffer,
+        cumulativeFit: cumulativeFitBuffer,
+        diffSquared: diffSquaredBuffer
+      })
+      else intervals.push({
+        lowerBound,
+        upperBound,
+        midpoint,
+        fi,
+        Pm,
+        fit,
+        cumulativeFi: null,
+        cumulativeFit: null,
+        diffSquared: null
+      });
     }
     
     const degreesOfFreedom = intervals.filter(interval => interval.cumulativeFi != null).length - 1;
@@ -278,14 +275,13 @@ class Lab5 extends Component {
       expectedFrequencies[k] = probability*n;
     }
 
-    const observedFrequenciesArray = new Array(maxK + 1).fill(0);
+    const observedFrequenciesArray = new Array(maxK+1).fill(0);
     for(const [value, frequency] of Object.entries(observedFrequencies)) observedFrequenciesArray[parseInt(value)] = frequency;
-
     let chiSquare = this.calculateChiSquare(observedFrequenciesArray, expectedFrequencies);
 
-    const degreesOfFreedom = maxK - (select === 0 ? 2 : 1);
+    const degreesOfFreedom = maxK - (select===0 ? 2 : 1);
     const chiSquareCritical = jStat.chisquare.inv(1-0.05, degreesOfFreedom);
-    const isHypothesisAccepted = chiSquare < chiSquareCritical;
+    const isHypothesisAccepted = chiSquare<chiSquareCritical;
     let intervals = [];
     let cumulativeFi = 0;
     let cumulativeFit = 0;
@@ -294,40 +290,36 @@ class Lab5 extends Component {
 
     observedFrequenciesArray.forEach((fi, i) => {
       const fit = expectedFrequencies[i];
-      const diffSquared = fi > 0 ? Math.pow(fi - fit, 2) / fit : 0;
+      const diffSquared = fi > 0 ? Math.pow(fi-fit, 2)/fit : 0;
   
       cumulativeFi += fi;
       cumulativeFit += fit;
       cumulativeDiffSquared += diffSquared;
   
-      if(cumulativeFi<5 || cumulativeFit<5){
-        intervals.push({
-          lowerBound: i,
-          upperBound: i + 1,
-          midpoint: i + 0.5,
-          fi,
-          Pm: fit / n, 
-          fit,
-          cumulativeFi: null,
-          cumulativeFit: null,
-          diffSquared: null
-        });
-      } else {
-        
+      if(cumulativeFi<5 || cumulativeFit<5) intervals.push({
+        lowerBound: i,
+        upperBound: i+1,
+        midpoint: i+0.5,
+        fi,
+        Pm: fit/n, 
+        fit,
+        cumulativeFi: null,
+        cumulativeFit: null,
+        diffSquared: null
+      })
+      else {
         chiSquareSum += cumulativeDiffSquared;
         intervals.push({
           lowerBound: i,
-          upperBound: i + 1,
-          midpoint: i + 0.5,
+          upperBound: i+1,
+          midpoint: i+0.5,
           fi,
-          Pm: fit / n, 
+          Pm: fit/n, 
           fit,
           cumulativeFi,
           cumulativeFit,
           diffSquared: cumulativeDiffSquared
         });
-  
-        
         cumulativeFi = 0;
         cumulativeFit = 0;
         cumulativeDiffSquared = 0;
@@ -335,12 +327,12 @@ class Lab5 extends Component {
     });
   
     
-    if (cumulativeFi > 0 || cumulativeFit > 0) {
-      let lastNonEmptyIntervalIndex = intervals.length - 1;
-      while (lastNonEmptyIntervalIndex >= 0 && intervals[lastNonEmptyIntervalIndex].cumulativeFi === null) {
+    if(cumulativeFi>0 || cumulativeFit>0){
+      let lastNonEmptyIntervalIndex = intervals.length-1;
+      while(lastNonEmptyIntervalIndex>=0 && intervals[lastNonEmptyIntervalIndex].cumulativeFi===null){
         lastNonEmptyIntervalIndex--;
       }
-      if (lastNonEmptyIntervalIndex >= 0) {
+      if(lastNonEmptyIntervalIndex>=0){
         intervals[lastNonEmptyIntervalIndex].cumulativeFi += cumulativeFi;
         intervals[lastNonEmptyIntervalIndex].cumulativeFit += cumulativeFit;
         intervals[lastNonEmptyIntervalIndex].diffSquared += cumulativeDiffSquared;
