@@ -144,7 +144,6 @@ class Lab5 extends Component {
     const hypothesisAccepted = chiSquareSum < chiSquareCritical;
   
     this.setState({
-      inter: null,
       intervals: intervals,
       chiSquare: chiSquareSum,
       chiSquareCritical: chiSquareCritical,

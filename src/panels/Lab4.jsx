@@ -120,8 +120,8 @@ class Lab4 extends Component {
 			if (alpha <= 0 || beta <= 0) return alert('Параметры α и β должны быть больше нуля.');
 			sample = this.generateBetaSample(alpha, beta, sampleSize);
 			estimates = this.calculateBetaEstimates(sample, percent);
-			answer = `Точечная оценка параметра α: ${estimates.alpha.toFixed(4)}, ` +
-					 `Точечная оценка параметра β: ${estimates.beta.toFixed(4)}\n` +
+			answer = `Точечная оценка параметра α: ${estimates.alphad.toFixed(4)}, ` +
+					 `Точечная оценка параметра β: ${estimates.betad.toFixed(4)}\n` +
 					 `Доверительный интервал для α: [${estimates.alphaConfidenceInterval[0].toFixed(4)}, ${estimates.alphaConfidenceInterval[1].toFixed(4)}], ` +
 					 `Доверительный интервал для β: [${estimates.betaConfidenceInterval[0].toFixed(4)}, ${estimates.betaConfidenceInterval[1].toFixed(4)}]`;
 		}
@@ -154,8 +154,8 @@ class Lab4 extends Component {
 		];
 		
 		return {
-		  alpha: alphaHat,
-		  beta: betaHat,
+		  alphad: alphaHat,
+		  betad: betaHat,
 		  alphaConfidenceInterval: alphaInterval,
 		  betaConfidenceInterval: betaInterval
 		};
