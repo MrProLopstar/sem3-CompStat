@@ -89,43 +89,53 @@ class Lab5 extends Component {
     const { arr } = this.state;
     const sample = arr.map(item => parseFloat(item.label));
     const n = sample.length;
+    const mean = jStat.mean(sample);
+    const stdDeviation = jStat.stdev(sample, true);
     const min = jStat.min(sample);
     const max = jStat.max(sample);
     const range = max - min;
     const l = Math.ceil(1 + 3.322 * Math.log10(n));
     const h = range / l;
-
+  
     let intervals = [];
+    let cumulativeFi = 0; // Накопленные опытные частоты
+    let cumulativeFit = 0; // Накопленные теоретические частоты
+    let chiSquareSum = 0; // Сумма для статистики хи-квадрат
+  
     for (let i = 0; i < l; i++) {
       const start = min + i * h;
-      const end = i === l - 1 ? max : start + h;
-      const count = sample.filter(x => (i === 0 ? x >= start && x < end : x > start && x <= end)).length;
-      intervals.push({ start, end, count });
-    }
-
-    const mean = jStat.mean(sample);
-    const stdDeviation = jStat.stdev(sample, true);
-    let chiSquare = 0;
-    intervals.forEach(interval => {
-      const z1 = (interval.start - mean) / stdDeviation;
-      const z2 = (interval.end - mean) / stdDeviation;
+      const end = (i === l - 1) ? max : start + h;
+      const fi = sample.filter(x => x >= start && x < end).length;
+      cumulativeFi += fi;
+  
+      const z1 = (start - mean) / stdDeviation;
+      const z2 = (end - mean) / stdDeviation;
       const p = jStat.normal.cdf(z2, 0, 1) - jStat.normal.cdf(z1, 0, 1);
-      const expected = n * p;
-      const chi = Math.pow(interval.count - expected, 2) / expected;
-      chiSquare += chi;
-
-      interval.expected = expected;
-      interval.chi = chi;
-    });
-
-    const chiSquareCritical = jStat.chisquare.inv(1 - 0.05, l - 1);
-    const hypothesisAccepted = chiSquare < chiSquareCritical;
-
+      const fit = n * p;
+      cumulativeFit += fit;
+  
+      const diffSquared = Math.pow(fi - fit, 2) / (fit || 1); // Избегаем деления на ноль
+      chiSquareSum += diffSquared;
+  
+      intervals.push({
+        m: i, // Индекс интервала
+        fi: fi,
+        PNm: p,
+        fit: fit,
+        fi_mop: cumulativeFi,
+        fit_mop: cumulativeFit,
+        diffSquared: diffSquared
+      });
+    }
+  
+    const chiSquareCritical = jStat.chisquare.inv(1 - 0.05, l - 1 - 2); // Уменьшаем на 2 из-за оценки mean и stdDeviation
+    const hypothesisAccepted = chiSquareSum < chiSquareCritical;
+  
     let answer = `Задание 3. С помощью критерия хи-квадрат проверить свою выборку на нормальное распределение генеральной совокупности.\n` +
-                  `Значение критерия хи-квадрат: ${chiSquare.toFixed(4)}\n` +
+                  `Значение критерия хи-квадрат: ${chiSquareSum.toFixed(4)}\n` +
                   `Критическое значение хи-квадрат: ${chiSquareCritical.toFixed(4)}\n` +
                   `Гипотеза о соответствии распределения нормальному: ${hypothesisAccepted ? 'принимается' : 'не принимается'}`;
-
+  
     this.setState({ answer, intervals, chartData: null });
   };
 
@@ -134,21 +144,25 @@ class Lab5 extends Component {
       <table>
         <thead>
           <tr>
-            <th className="table-cell">Нижняя граница</th>
-            <th className="table-cell">Верхняя граница</th>
-            <th className="table-cell">Опытные частоты</th>
-            <th className="table-cell">Вероятность попадания в интервал</th>
-            <th className="table-cell">Теоретические частоты</th>
+            <th className="table-cell">m</th>
+            <th className="table-cell">f_i</th>
+            <th className="table-cell">P_N(m)</th>
+            <th className="table-cell">f_i^t=P_N(m)*n</th>
+            <th className="table-cell">f_i mop</th>
+            <th className="table-cell">f_i mop^t</th>
+            <th className="table-cell">(f_i-f_i^t)^2</th>
           </tr>
         </thead>
         <tbody>
           {intervals.map((interval, index) => (
             <tr key={index}>
-              <td className="table-cell">{interval.start.toFixed(2)}</td>
-              <td className="table-cell">{interval.end.toFixed(2)}</td>
-              <td className="table-cell">{interval.count}</td>
-              <td className="table-cell">{((interval.count / this.state.arr.length) * 100).toFixed(2)}%</td>
-              <td className="table-cell">{interval.expected.toFixed(2)}</td>
+              <td className="table-cell">{interval.m}</td>
+              <td className="table-cell">{interval.fi}</td>
+              <td className="table-cell">{interval.PNm.toFixed(5)}</td>
+              <td className="table-cell">{interval.fit.toFixed(2)}</td>
+              <td className="table-cell">{(index === 0 ? interval.fi : interval.fi + intervals[index - 1].fi_mop).toFixed(2)}</td>
+              <td className="table-cell">{(index === 0 ? interval.fit : interval.fit + intervals[index - 1].fit_mop).toFixed(2)}</td>
+              <td className="table-cell">{interval.diffSquared.toFixed(4)}</td>
             </tr>
           ))}
         </tbody>
