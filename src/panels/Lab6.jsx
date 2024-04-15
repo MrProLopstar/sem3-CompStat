@@ -76,8 +76,35 @@ class Lab6 extends Component {
         );
     }
 
-    handleFirstTask = () => {
-        this.setState({difference: true, task: "Задание 1\nВыполнить проверку гипотезы о равенстве средних для двух зависимых выборок с помощью парного критерия Стьюдента:\nа) Опытная группа до и после эксперимента;\nб) Контрольная группа до и после эксперимента."});
+    pairedStudentTest = (dataSet, name) => {
+        const diff = dataSet.before.map((before, index) => before - dataSet.after[index]);
+        const meanDiff = jStat.mean(diff);
+        const stdDiff = jStat.stdev(diff, true);
+        const n = diff.length;
+        const t = meanDiff / (stdDiff / Math.sqrt(n)); // Расчет t-статистики
+        const criticalT = jStat.studentt.inv(0.975, n - 1); // Двусторонний t-критерий
+        const pValue = (1 - jStat.studentt.cdf(Math.abs(t), n - 1)) * 2;
+      
+        let conclusion = `Вывод: `;
+        if (Math.abs(t) >= criticalT) {
+          conclusion += `так как T фактическое >= T критическое (${t.toFixed(4)} >= ${criticalT.toFixed(4)}), то с вероятностью 95% нулевая гипотеза о равенстве средних в ${name} до эксперимента и после него отвергается. Следовательно, значения в ${name} до и после эксперимента не равны. Эксперимент повлиял на значения.`;
+        } else {
+          conclusion += `так как T фактическое < T критическое (${t.toFixed(4)} < ${criticalT.toFixed(4)}), то с вероятностью 95% нулевая гипотеза о равенстве средних в ${name} до эксперимента и после него принимается. Следовательно, значения в ${name} до и после эксперимента равны. Эксперимент не повлиял на значения.`;
+        }
+      
+        return {
+          tValue: t.toFixed(4),
+          criticalT: criticalT.toFixed(4),
+          pValue: pValue.toFixed(4),
+          conclusion
+        };
+      };
+      
+      handleFirstTask = () => {
+        const ogResult = this.pairedStudentTest(this.state.og, "Опытной группе (ОГ)");
+        const kgResult = this.pairedStudentTest(this.state.kg, "Контрольной группе (КГ)");
+        const resultText = `Опытная группа (ОГ):\nT-фактическое: ${ogResult.tValue}\nT-критическое: ${ogResult.criticalT}\nP-значение: ${ogResult.pValue}\n${ogResult.conclusion}\n\nКонтрольная группа (КГ):\nT-фактическое: ${kgResult.tValue}\nT-критическое: ${kgResult.criticalT}\nP-значение: ${kgResult.pValue}\n${kgResult.conclusion}`;
+        this.setState({result: resultText, difference: true, task: "Задание 1\nВыполнить проверку гипотезы о равенстве средних для двух зависимых выборок с помощью парного критерия Стьюдента:\nа) Опытная группа до и после эксперимента;\nб) Контрольная группа до и после эксперимента."});
     };
 
     handleSecondTask = () => {
@@ -90,7 +117,7 @@ class Lab6 extends Component {
 
 	render(){
 		const {title} = getState().app;
-        const {og,kg,task} = this.state;
+        const {og,kg,task,result} = this.state;
 		return (
 			<Panel>
 				<PanelHeader before={<Icon24Back onClick={() => dispatch(goBack())}/>}>{title}</PanelHeader>
@@ -111,6 +138,12 @@ class Lab6 extends Component {
                     <Textarea
                         disabled
                         value={task}
+                    />
+                </FormItem>}
+                {result && <FormItem>
+                    <Textarea
+                        disabled
+                        value={result}
                     />
                 </FormItem>}
 			</Panel>
