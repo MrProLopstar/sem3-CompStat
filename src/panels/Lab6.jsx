@@ -114,17 +114,14 @@ class Lab6 extends Component {
     };
     
     handleSecondTask = () => {
-        // Рассчитываем дисперсии для групп ДО и ПОСЛЕ эксперимента
         const varianceBeforeOG = jStat.variance(this.state.og.before, true);
         const varianceBeforeKG = jStat.variance(this.state.kg.before, true);
         const varianceAfterOG = jStat.variance(this.state.og.after, true);
         const varianceAfterKG = jStat.variance(this.state.kg.after, true);
     
-        // Рассчитываем F-статистику
         const fBefore = varianceBeforeOG / varianceBeforeKG;
         const fAfter = varianceAfterOG / varianceAfterKG;
     
-        // Находим критическое значение F для заданного уровня значимости
         const dfBeforeOG = this.state.og.before.length - 1;
         const dfBeforeKG = this.state.kg.before.length - 1;
         const dfAfterOG = this.state.og.after.length - 1;
@@ -133,7 +130,6 @@ class Lab6 extends Component {
         const criticalFBefore = jStat.centralF.inv(0.975, dfBeforeOG, dfBeforeKG);
         const criticalFAfter = jStat.centralF.inv(0.975, dfAfterOG, dfAfterKG);
     
-        // Формируем вывод
         const conclusionBefore = fBefore >= criticalFBefore ?
             `F-фактическое (${fBefore.toFixed(4)}) >= F-критическое (${criticalFBefore.toFixed(4)}), нулевая гипотеза отвергается.` :
             `F-фактическое (${fBefore.toFixed(4)}) < F-критическое (${criticalFBefore.toFixed(4)}), нулевая гипотеза принимается.`;
@@ -142,7 +138,6 @@ class Lab6 extends Component {
             `F-фактическое (${fAfter.toFixed(4)}) >= F-критическое (${criticalFAfter.toFixed(4)}), нулевая гипотеза отвергается.` :
             `F-фактическое (${fAfter.toFixed(4)}) < F-критическое (${criticalFAfter.toFixed(4)}), нулевая гипотеза принимается.`;
     
-        // Обновляем состояние с результатами
         this.setState({
             result: `ОГ (До эксперимента):\n` +
                     `n: ${this.state.og.before.length}\n` +
@@ -171,7 +166,6 @@ class Lab6 extends Component {
         });
     };
     
-    // Функция для выполнения непарного критерия Стьюдента
     unpairedStudentTest = (data1, data2, period) => {
         const mean1 = jStat.mean(data1);
         const mean2 = jStat.mean(data2);
@@ -200,15 +194,12 @@ class Lab6 extends Component {
     };
     
     handleThirdTask = () => {
-        // Вычисляем значения для ОГ и КГ до и после эксперимента
         const resultsBefore = this.unpairedStudentTest(this.state.og.before, this.state.kg.before, "до эксперимента");
         const resultsAfter = this.unpairedStudentTest(this.state.og.after, this.state.kg.after, "после эксперимента");
     
-        // Формируем текст результата для вывода
         const resultText = `ОГ и КГ до эксперимента:\nsd = ${resultsBefore.sd}\nT фактическое = ${resultsBefore.tValue}\nT критическое = ${resultsBefore.criticalT}\n${resultsBefore.conclusion}\n\n` +
                            `ОГ и КГ после эксперимента:\nsd = ${resultsAfter.sd}\nT фактическое = ${resultsAfter.tValue}\nT критическое = ${resultsAfter.criticalT}\n${resultsAfter.conclusion}`;
     
-        // Обновляем состояние с результатами
         this.setState({ 
             result: resultText,
             difference: false,
