@@ -112,13 +112,108 @@ class Lab6 extends Component {
         const resultText = `Опытная группа (ОГ):\nn: ${ogResult.n}\nСреднее (До): ${ogResult.meanBefore}\nСреднее (После): ${ogResult.meanAfter}\nСреднее разностей: ${ogResult.meanDiff}\nДисперсия разностей: ${ogResult.s2}\nT-фактическое: ${ogResult.tValue}\nT-критическое: ${ogResult.criticalT}\n${ogResult.conclusion}\n\nКонтрольная группа (КГ):\nn: ${kgResult.n}\nСреднее (До): ${kgResult.meanBefore}\nСреднее (После): ${kgResult.meanAfter}\nСреднее разностей: ${kgResult.meanDiff}\nДисперсия разностей: ${kgResult.s2}\nT-фактическое: ${kgResult.tValue}\nT-критическое: ${kgResult.criticalT}\n${kgResult.conclusion}`;
         this.setState({result: resultText, difference: true, task: "Задание 1\nВыполнить проверку гипотезы о равенстве средних для двух зависимых выборок с помощью парного критерия Стьюдента:\nа) Опытная группа до и после эксперимента;\nб) Контрольная группа до и после эксперимента."});
     };
-
+    
     handleSecondTask = () => {
-        this.setState({difference: false, task: "Задание 2\nВыполнить проверку гипотезы о равенстве дисперсий для двух независимых выборок с помощью критерия Фишера:\nа) Опытная и контрольная группа до эксперимента;\nб) Опытная и контрольная группа после экспермиента."});
+        // Рассчитываем дисперсии для групп ДО и ПОСЛЕ эксперимента
+        const varianceBeforeOG = jStat.variance(this.state.og.before, true);
+        const varianceBeforeKG = jStat.variance(this.state.kg.before, true);
+        const varianceAfterOG = jStat.variance(this.state.og.after, true);
+        const varianceAfterKG = jStat.variance(this.state.kg.after, true);
+    
+        // Рассчитываем F-статистику
+        const fBefore = varianceBeforeOG / varianceBeforeKG;
+        const fAfter = varianceAfterOG / varianceAfterKG;
+    
+        // Находим критическое значение F для заданного уровня значимости
+        const dfBeforeOG = this.state.og.before.length - 1;
+        const dfBeforeKG = this.state.kg.before.length - 1;
+        const dfAfterOG = this.state.og.after.length - 1;
+        const dfAfterKG = this.state.kg.after.length - 1;
+        
+        const criticalFBefore = jStat.centralF.inv(0.975, dfBeforeOG, dfBeforeKG);
+        const criticalFAfter = jStat.centralF.inv(0.975, dfAfterOG, dfAfterKG);
+    
+        // Формируем вывод
+        const conclusionBefore = fBefore >= criticalFBefore ?
+            `F-фактическое (${fBefore.toFixed(4)}) >= F-критическое (${criticalFBefore.toFixed(4)}), нулевая гипотеза отвергается.` :
+            `F-фактическое (${fBefore.toFixed(4)}) < F-критическое (${criticalFBefore.toFixed(4)}), нулевая гипотеза принимается.`;
+        
+        const conclusionAfter = fAfter >= criticalFAfter ?
+            `F-фактическое (${fAfter.toFixed(4)}) >= F-критическое (${criticalFAfter.toFixed(4)}), нулевая гипотеза отвергается.` :
+            `F-фактическое (${fAfter.toFixed(4)}) < F-критическое (${criticalFAfter.toFixed(4)}), нулевая гипотеза принимается.`;
+    
+        // Обновляем состояние с результатами
+        this.setState({
+            result: `ОГ (До эксперимента):\n` +
+                    `n: ${this.state.og.before.length}\n` +
+                    `x*: ${jStat.mean(this.state.og.before).toFixed(4)}\n` +
+                    `s^2: ${varianceBeforeOG.toFixed(4)}\n//\n` +
+                    `КГ (До эксперимента):\n` +
+                    `n: ${this.state.kg.before.length}\n` +
+                    `x*: ${jStat.mean(this.state.kg.before).toFixed(4)}\n` +
+                    `s^2: ${varianceBeforeKG.toFixed(4)}\n//\n` +
+                    `F-факт: ${fBefore.toFixed(4)}\n` +
+                    `F-крит: ${criticalFBefore.toFixed(4)}\n` +
+                    `${conclusionBefore}\n\n` +
+                    `ОГ (После эксперимента):\n` +
+                    `n: ${this.state.og.after.length}\n` +
+                    `x*: ${jStat.mean(this.state.og.after).toFixed(4)}\n` +
+                    `s^2: ${varianceAfterOG.toFixed(4)}\n//\n` +
+                    `КГ (После эксперимента):\n` +
+                    `n: ${this.state.kg.after.length}\n` +
+                    `x*: ${jStat.mean(this.state.kg.after).toFixed(4)}\n` +
+                    `s^2: ${varianceAfterKG.toFixed(4)}\n//\n` +
+                    `F-факт: ${fAfter.toFixed(4)}\n` +
+                    `F-крит: ${criticalFAfter.toFixed(4)}\n` +
+                    `${conclusionAfter}`,
+            difference: false,
+            task: "Задание 2\nВыполнить проверку гипотезы о равенстве дисперсий для двух независимых выборок с помощью критерия Фишера:\nа) Опытная и контрольная группа до эксперимента;\nб) Опытная и контрольная группа после экспермиента."
+        });
     };
-
+    
+    // Функция для выполнения непарного критерия Стьюдента
+    unpairedStudentTest = (data1, data2, period) => {
+        const mean1 = jStat.mean(data1);
+        const mean2 = jStat.mean(data2);
+        const sd1 = jStat.stdev(data1, true);
+        const sd2 = jStat.stdev(data2, true);
+        const n1 = data1.length;
+        const n2 = data2.length;
+    
+        const sp = Math.sqrt(((n1 - 1) * sd1 ** 2 + (n2 - 1) * sd2 ** 2) / (n1 + n2 - 2));
+        const tValue = (mean1 - mean2) / (sp * Math.sqrt(1 / n1 + 1 / n2));
+        const criticalT = jStat.studentt.inv(0.975, n1 + n2 - 2);
+        
+        let conclusion = '';
+        if (Math.abs(tValue) >= criticalT) {
+            conclusion = `T фактическое (${tValue.toFixed(4)}) >= T критическое (${criticalT.toFixed(4)}), следовательно, с вероятностью 95% нулевая гипотеза о равенстве средних значений в ОГ и КГ ${period} отвергается.`;
+        } else {
+            conclusion = `T фактическое (${tValue.toFixed(4)}) < T критическое (${criticalT.toFixed(4)}), следовательно, с вероятностью 95% нулевая гипотеза о равенстве средних значений в ОГ и КГ ${period} принимается.`;
+        }
+    
+        return {
+            tValue: tValue.toFixed(4),
+            criticalT: criticalT.toFixed(4),
+            sd: sp.toFixed(4),
+            conclusion: conclusion
+        };
+    };
+    
     handleThirdTask = () => {
-        this.setState({difference: false, task: "Задание 3\nВыполнить проверку гипотезы о равенстве средних для двух независимых выборок с помощью непарного критерия Стьюдента:\nа) Опытная и контрольная группа до эксперимента;\nб) Опытная и контрольная группа после эксперимента."});
+        // Вычисляем значения для ОГ и КГ до и после эксперимента
+        const resultsBefore = this.unpairedStudentTest(this.state.og.before, this.state.kg.before, "до эксперимента");
+        const resultsAfter = this.unpairedStudentTest(this.state.og.after, this.state.kg.after, "после эксперимента");
+    
+        // Формируем текст результата для вывода
+        const resultText = `ОГ и КГ до эксперимента:\nsd = ${resultsBefore.sd}\nT фактическое = ${resultsBefore.tValue}\nT критическое = ${resultsBefore.criticalT}\n${resultsBefore.conclusion}\n\n` +
+                           `ОГ и КГ после эксперимента:\nsd = ${resultsAfter.sd}\nT фактическое = ${resultsAfter.tValue}\nT критическое = ${resultsAfter.criticalT}\n${resultsAfter.conclusion}`;
+    
+        // Обновляем состояние с результатами
+        this.setState({ 
+            result: resultText,
+            difference: false,
+            task: "Задание 3\nВыполнить проверку гипотезы о равенстве средних для двух независимых выборок с помощью непарного критерия Стьюдента:\nа) Опытная и контрольная группа до эксперимента;\nб) Опытная и контрольная группа после эксперимента."
+        });
     };
 
 	render(){
@@ -150,7 +245,7 @@ class Lab6 extends Component {
                     <Textarea
                         disabled
                         value={result}
-                        maxHeight={1000}
+                        maxHeight={2000}
                     />
                 </FormItem>}
 			</Panel>
