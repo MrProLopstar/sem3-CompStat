@@ -7,29 +7,29 @@ import { v4 as uuidv4 } from 'uuid';
 import { Line, Bar } from 'react-chartjs-2';
 import data from '../data/lab6.json'
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-	BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+    Filler
 } from 'chart.js';
 import jStat, { erf } from 'jstat';
 
 ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-	BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+        BarElement,
+    Title,
+    Tooltip,
+    Legend,
+    Filler
 );
 
 class Lab6 extends Component {
@@ -38,42 +38,65 @@ class Lab6 extends Component {
 		this.state = {
             og: data.og,
             kg: data.kg,
-            difference: false
+            difference: 0
 		};
 	}
 
-    renderTable = (dataSet) => {
+    renderTable = (dataSet, dataSet1, before) => {
         const {difference} = this.state;
-        return (
+        if(difference==0 || difference==1) return (
             <table>
-            <thead>
-                <tr>
-                    {['',...dataSet.before].map((_, index) => (
-                        <th key={index} className="table-cell">{index==0 ? '' : index}</th>
-                    ))}
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    {["До", ...dataSet.before].map((value, index) => (
-                        <td key={index} className="table-cell">{value}</td>
-                    ))}
-                </tr>
-                <tr>
-                    {["После", ...dataSet.after].map((value, index) => (
-                        <td key={index} className="table-cell">{value}</td>
-                    ))}
-                </tr>
-                {difference && (
+                <thead>
                     <tr>
-                        {["До-После", ...dataSet.before].map((value, index) => (
-                            <td key={index} className="table-cell">{index==0 ? value : (value-dataSet.after[index-1]).toFixed(1)}</td>
+                        {['',...dataSet.before].map((_, index) => (
+                            <th key={index} className="table-cell">{index==0 ? '' : index}</th>
                         ))}
                     </tr>
-                )}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    <tr>
+                        {["До", ...dataSet.before].map((value, index) => (
+                            <td key={index} className="table-cell">{value}</td>
+                        ))}
+                    </tr>
+                    <tr>
+                        {["После", ...dataSet.after].map((value, index) => (
+                            <td key={index} className="table-cell">{value}</td>
+                        ))}
+                    </tr>
+                    {difference==1 && (
+                        <tr>
+                            {["До-После", ...dataSet.before].map((value, index) => (
+                                <td key={index} className="table-cell">{index==0 ? value : (value-dataSet.after[index-1]).toFixed(1)}</td>
+                            ))}
+                        </tr>
+                    )}
+                </tbody>
+            </table>
         );
+        if(difference==2 || difference==3) return (
+            <table>
+                <thead>
+                    <tr>
+                        {['',...dataSet.before].map((_, index) => (
+                            <th key={index} className="table-cell">{index==0 ? '' : index}</th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        {["ОГ "+(before ? "До" : "После"), ...(before ? dataSet.before : dataSet.after)].map((value, index) => (
+                            <td key={index} className="table-cell">{value}</td>
+                        ))}
+                    </tr>
+                    <tr>
+                        {["КГ "+(before ? "До" : "После"), ...(before ? dataSet1.before : dataSet1.after)].map((value, index) => (
+                            <td key={index} className="table-cell">{value}</td>
+                        ))}
+                    </tr>
+                </tbody>
+            </table>
+        )
     }
 
     pairedStudentTest = (dataSet, name) => {
@@ -110,7 +133,7 @@ class Lab6 extends Component {
         const ogResult = this.pairedStudentTest(this.state.og, "Опытной группе (ОГ)");
         const kgResult = this.pairedStudentTest(this.state.kg, "Контрольной группе (КГ)");
         const resultText = `Опытная группа (ОГ):\nn: ${ogResult.n}\nСреднее (До): ${ogResult.meanBefore}\nСреднее (После): ${ogResult.meanAfter}\nСреднее разностей: ${ogResult.meanDiff}\nДисперсия разностей: ${ogResult.s2}\nT-фактическое: ${ogResult.tValue}\nT-критическое: ${ogResult.criticalT}\n${ogResult.conclusion}\n\nКонтрольная группа (КГ):\nn: ${kgResult.n}\nСреднее (До): ${kgResult.meanBefore}\nСреднее (После): ${kgResult.meanAfter}\nСреднее разностей: ${kgResult.meanDiff}\nДисперсия разностей: ${kgResult.s2}\nT-фактическое: ${kgResult.tValue}\nT-критическое: ${kgResult.criticalT}\n${kgResult.conclusion}`;
-        this.setState({result: resultText, difference: true, task: "Задание 1\nВыполнить проверку гипотезы о равенстве средних для двух зависимых выборок с помощью парного критерия Стьюдента:\nа) Опытная группа до и после эксперимента;\nб) Контрольная группа до и после эксперимента."});
+        this.setState({result: resultText, difference: 1, task: "Задание 1\nВыполнить проверку гипотезы о равенстве средних для двух зависимых выборок с помощью парного критерия Стьюдента:\nа) Опытная группа до и после эксперимента;\nб) Контрольная группа до и после эксперимента."});
     };
     
     handleSecondTask = () => {
@@ -161,7 +184,7 @@ class Lab6 extends Component {
                     `F-факт: ${fAfter.toFixed(4)}\n` +
                     `F-крит: ${criticalFAfter.toFixed(4)}\n` +
                     `${conclusionAfter}`,
-            difference: false,
+            difference: 2,
             task: "Задание 2\nВыполнить проверку гипотезы о равенстве дисперсий для двух независимых выборок с помощью критерия Фишера:\nа) Опытная и контрольная группа до эксперимента;\nб) Опытная и контрольная группа после экспермиента."
         });
     };
@@ -202,25 +225,36 @@ class Lab6 extends Component {
     
         this.setState({ 
             result: resultText,
-            difference: false,
+            difference: 3,
             task: "Задание 3\nВыполнить проверку гипотезы о равенстве средних для двух независимых выборок с помощью непарного критерия Стьюдента:\nа) Опытная и контрольная группа до эксперимента;\nб) Опытная и контрольная группа после эксперимента."
         });
     };
 
 	render(){
 		const {title} = getState().app;
-        const {og,kg,task,result} = this.state;
+        const {og,kg,task,result,difference} = this.state;
 		return (
 			<Panel>
 				<PanelHeader before={<Icon24Back onClick={() => dispatch(goBack())}/>}>{title}</PanelHeader>
-                <div>
-                    <FormItem top="ОГ (Основная группа)">
-                        {this.renderTable(og)}
-                    </FormItem>
-                    <FormItem top="КГ (Контрольная группа)">
-                        {this.renderTable(kg)}
-                    </FormItem>
-                </div>
+                {(difference==0 || difference==1) ? (
+                    <div>
+                        <FormItem top="ОГ (Основная группа)">
+                            {this.renderTable(og)}
+                        </FormItem>
+                        <FormItem top="КГ (Контрольная группа)">
+                            {this.renderTable(kg)}
+                        </FormItem>
+                    </div>
+                ) : (
+                    <div>
+                        <FormItem>
+                            {this.renderTable(kg,og,true)}
+                        </FormItem>
+                        <FormItem>
+                            {this.renderTable(kg,og)}
+                        </FormItem>
+                    </div>
+                )}
                 <FormLayoutGroup mode="horizontal">
                     <FormItem><Button mode="secondary" stretched onClick={this.handleFirstTask}>Задание 1</Button></FormItem>
                     <FormItem><Button mode="secondary" stretched onClick={this.handleSecondTask}>Задание 2</Button></FormItem>

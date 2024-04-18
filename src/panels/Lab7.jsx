@@ -81,7 +81,7 @@ class Lab7 extends Component {
     return ranks;
   };
 
-  renderTable = (dataSet) => {
+  renderTable = (dataSet, dataSet1, before) => {
     const { difference } = this.state;
     let diffs = [];
     let signs = [];
@@ -106,16 +106,33 @@ class Lab7 extends Component {
     return (
       <table>
         <tbody>
-          <tr>
-            {["До", ...dataSet.before].map((value, index) => (
-              <td key={index} className="table-cell">{value}</td>
-            ))}
-          </tr>
-          <tr>
-            {["После", ...dataSet.after].map((value, index) => (
-              <td key={index} className="table-cell">{value}</td>
-            ))}
-          </tr>
+          {(difference === 0 || difference === 1) ? (
+            <>
+              <tr>
+                {["До", ...dataSet.before].map((value, index) => (
+                  <td key={index} className="table-cell">{value}</td>
+                ))}
+              </tr>
+              <tr>
+                {["После", ...dataSet.after].map((value, index) => (
+                  <td key={index} className="table-cell">{value}</td>
+                ))}
+              </tr>
+            </>
+          ) : (
+            <>
+              <tr>
+                {["ОГ "+(before ? "До" : "После"), ...(before ? dataSet.before : dataSet.after)].map((value, index) => (
+                  <td key={index} className="table-cell">{value}</td>
+                ))}
+              </tr>
+              <tr>
+                {["КГ "+(before ? "До" : "После"), ...(before ? dataSet1.before : dataSet1.after)].map((value, index) => (
+                  <td key={index} className="table-cell">{value}</td>
+                ))}
+              </tr>
+            </>
+          )}
           {difference === 1 && (
             <>
               <tr>
@@ -300,18 +317,29 @@ class Lab7 extends Component {
 
 	render(){
 		const {title} = getState().app;
-    const {og,kg,task,result} = this.state;
+    const {og,kg,task,result,difference} = this.state;
 		return (
 			<Panel>
 				<PanelHeader before={<Icon24Back onClick={() => dispatch(goBack())}/>}>{title}</PanelHeader>
-        <div>
-          <FormItem top="ОГ (Основная группа)">
-            {this.renderTable(og)}
-          </FormItem>
-          <FormItem top="КГ (Контрольная группа)">
-            {this.renderTable(kg)}
-          </FormItem>
-        </div>
+        {(difference==0 || difference==1) ? (
+          <div>
+            <FormItem top="ОГ (Основная группа)">
+              {this.renderTable(og)}
+            </FormItem>
+            <FormItem top="КГ (Контрольная группа)">
+              {this.renderTable(kg)}
+            </FormItem>
+          </div>
+        ) : (
+          <div>
+            <FormItem>
+              {this.renderTable(kg,og,true)}
+            </FormItem>
+            <FormItem>
+              {this.renderTable(kg,og)}
+            </FormItem>
+          </div>
+        )}
         <FormLayoutGroup mode="horizontal">
           <FormItem><Button mode="secondary" stretched onClick={this.handleFirstTask}>Задание 1</Button></FormItem>
           <FormItem><Button mode="secondary" stretched onClick={this.handleSecondTask}>Задание 2</Button></FormItem>
