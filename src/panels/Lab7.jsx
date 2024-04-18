@@ -41,103 +41,119 @@ class Lab7 extends Component {
       difference: 0
 		};
 	};
+  
+  calculateRanksWilcoxon = (orderedData) => {
+    const ranks = orderedData.map((_, index) => index+1);
+    for(let i=0; i<orderedData.length; i++){
+      if(i>0 && orderedData[i]===orderedData[i-1]){
+        const start = i;
+        while(i<orderedData.length && orderedData[i]===orderedData[start]) i++;
+        const end = i-1;
+        const averageRank = (ranks[start]+ranks[end])/2;
+        for(let j=start; j<=end; j++) ranks[j] = averageRank;
+      }
+    }
+    return ranks;
+  };
+
+  calculateRanksDispersion = (orderedData) => {
+    let ranks = new Array(orderedData.length).fill(0);
+    let left = 0;
+    let right = ranks.length-1;
+    let rank = 1;
+
+    while(left<=right){
+      if (rank % 2 !== 0) ranks[left++] = rank;
+      else ranks[right--] = rank;
+      rank++;
+    }
+
+    for(let i=0; i<orderedData.length; i++){
+      if(i>0 && orderedData[i]===orderedData[i-1]){
+        const start = i;
+        while(i<orderedData.length && orderedData[i]===orderedData[start]) i++;
+        const end = i-1;
+        const averageRank = (ranks[start] + ranks[end]) / 2;
+        for(let j=start; j<=end; j++) ranks[j] = averageRank;
+      }
+    }
+
+    return ranks;
+  };
 
   renderTable = (dataSet) => {
     const { difference } = this.state;
     let diffs = [];
     let signs = [];
-
-    if (difference === 1) {
-        diffs = dataSet.before.map((before, index) => (before - dataSet.after[index]).toFixed(1));
-        signs = diffs.map(diff => diff > 0 ? "+" : diff < 0 ? "-" : "0");
+    if(difference===1){
+      diffs = dataSet.before.map((before, index) => (before - dataSet.after[index]).toFixed(1));
+      signs = diffs.map(diff => diff > 0 ? "+" : diff < 0 ? "-" : "0");
     }
 
     let orderedData = [];
     let groupNumbers = [];
     let ranks = [];
-    if (difference === 2) {
-        orderedData = [...dataSet.before, ...dataSet.after].sort((a, b) => a - b);
-        groupNumbers = orderedData.map(value => dataSet.before.includes(value) ? 1 : 2);
-        // Рассчитываем ранги с учетом повторяющихся значений
-        let currentRank = 1;
-        orderedData.forEach((value, index) => {
-            if (index > 0 && value === orderedData[index - 1]) {
-                ranks.push(currentRank);
-            } else {
-                ranks.push(currentRank);
-                currentRank++;
-            }
-        });
-        // Расчет средних рангов для повторяющихся значений
-        ranks = ranks.map((rank, index, self) => {
-            if (index > 0 && orderedData[index] === orderedData[index - 1]) {
-                const firstIndex = self.lastIndexOf(rank, index - 1);
-                const lastIndex = self.indexOf(rank, index);
-                const count = lastIndex - firstIndex + 1;
-                const sum = count * rank;
-                const averageRank = sum / count;
-                for (let i = firstIndex; i <= lastIndex; i++) {
-                    self[i] = averageRank;
-                }
-                return averageRank;
-            }
-            return rank;
-        });
+    if(difference===2){
+      orderedData = [...dataSet.before, ...dataSet.after].sort((a, b) => a - b);
+      groupNumbers = orderedData.map(value => dataSet.before.includes(value) ? 1 : 2);
+      ranks = this.calculateRanksWilcoxon(orderedData);
+    } else if(difference ===3){
+      orderedData = [...dataSet.before, ...dataSet.after].sort((a, b) => a - b);
+      groupNumbers = orderedData.map(value => dataSet.before.includes(value) ? 1 : 2);
+      ranks = this.calculateRanksDispersion(orderedData);
     }
 
-    // Отображение таблицы в соответствии с состоянием difference
     return (
-        <table>
-            <tbody>
-              
-            <tr>
-                            {["До", ...dataSet.before].map((value, index) => (
-                                <td key={index} className="table-cell">{value}</td>
-                            ))}
-                        </tr>
-                        <tr>
-                            {["После", ...dataSet.after].map((value, index) => (
-                                <td key={index} className="table-cell">{value}</td>
-                            ))}
-                        </tr>
-                        {difference === 1 && (
-                            <>
-                                <tr>
-                                    {["До-После", ...diffs].map((value, index) => {
-                                      index==0 ? 
-                                        <th key={index} className="table-cell">{value}</th> :
-                                        <td key={index} className="table-cell">{diffs[index-1]}</td>
-                                    })}
-                                </tr>
-                                <tr>
-                                    {["Знаки", ...signs].map((value, index) => (
-                                        <td key={index} className="table-cell">{index === 0 ? value : signs[index-1]}</td>
-                                    ))}
-                                </tr>
-                            </>
-                        )}
-                {difference === 2 && (
-                    <>
-                        <tr>
-                            <th className="table-cell">Данные в порядке возрастания</th>
-                            {orderedData.map((value, index) => (
-                                <td key={index} className="table-cell">{value.toFixed(1)}</td>
-                            ))}
-                        </tr>
-                        <tr>
-                            <th className="table-cell">№ группы</th>
-                            {groupNumbers.map((value, index) => (
-                                <td key={index} className="table-cell">{value}</td>
-                            ))}
-                        </tr>
-                        <tr>
-                          <th className="table-cell">Ранги для критерия о равенстве дисперсий</th>
-                          {ranks.map((value, index) => (
-                            <td key={index} className="table-cell">{index === 0 ? value : value}</td>
-                          ))}
-                        </tr>
-                    </>
-                )}
+      <table>
+        <tbody>
+          <tr>
+            {["До", ...dataSet.before].map((value, index) => (
+              <td key={index} className="table-cell">{value}</td>
+            ))}
+          </tr>
+          <tr>
+            {["После", ...dataSet.after].map((value, index) => (
+              <td key={index} className="table-cell">{value}</td>
+            ))}
+          </tr>
+          {difference === 1 && (
+            <>
+              <tr>
+                {["До-После", ...diffs].map((value, index) => {
+                  index==0 ? 
+                    <th key={index} className="table-cell">{value}</th> :
+                    <td key={index} className="table-cell">{diffs[index-1]}</td>
+                })}
+              </tr>
+              <tr>
+                {["Знаки", ...signs].map((value, index) => (
+                  <td key={index} className="table-cell">{index === 0 ? value : signs[index-1]}</td>
+                ))}
+              </tr>
+            </>
+          )}
+          {(difference === 2 || difference === 3) && (
+            <>
+              <tr>
+                <th className="table-cell">Данные в порядке возрастания</th>
+                {orderedData.map((value, index) => (
+                  <td key={index} className="table-cell">{value.toFixed(1)}</td>
+                ))}
+              </tr>
+              <tr>
+                <th className="table-cell">№ группы</th>
+                {groupNumbers.map((value, index) => (
+                  <td key={index} className="table-cell">{value}</td>
+                ))}
+              </tr>
+              <tr>
+                <th className="table-cell">Ранги для критерия о равенстве дисперсий</th>
+                {ranks.map((value, index) => (
+                  <td key={index} className="table-cell">{index === 0 ? value : value}</td>
+                ))}
+              </tr>
+            </>
+          )}
         </tbody>
       </table>
     );
@@ -148,15 +164,12 @@ class Lab7 extends Component {
     const positiveCount = diffs.filter(diff => diff > 0).length;
     const negativeCount = diffs.filter(diff => diff < 0).length;
     const n = diffs.length;
-    const F = positiveCount - negativeCount; // Разность количества положительных и отрицательных знаков
-    const Fcrit = jStat.normal.inv(0.975, 0, 1) * Math.sqrt(n); // Критическое значение для уровня значимости 0.05
+    const F = positiveCount - negativeCount;
+    const Fcrit = jStat.normal.inv(0.975, 0, 1) * Math.sqrt(n);
   
     let conclusion = '';
-    if (Math.abs(F) >= Fcrit) {
-      conclusion = `Так как F >= F_крит (${F.toFixed(4)} >= ${Fcrit.toFixed(4)}), то нулевая гипотеза о равенстве средних отвергается.`;
-    } else {
-      conclusion = `Так как F < F_крит (${F.toFixed(4)} < ${Fcrit.toFixed(4)}), то нулевая гипотеза о равенстве средних принимается.`;
-    }
+    if(Math.abs(F)>=Fcrit) conclusion = `Так как F >= F_крит (${F.toFixed(4)} >= ${Fcrit.toFixed(4)}), то нулевая гипотеза о равенстве средних отвергается.`;
+    else conclusion = `Так как F < F_крит (${F.toFixed(4)} < ${Fcrit.toFixed(4)}), то нулевая гипотеза о равенстве средних принимается.`;
   
     return {
       r: positiveCount,
@@ -197,9 +210,8 @@ class Lab7 extends Component {
       };
     });
   
-    const sumRanks = ranks.reduce(
-      (acc, rank) => {
-        if (rank.sign === 1) {
+    const sumRanks = ranks.reduce((acc, rank) => {
+        if(rank.sign===1){
           acc.R1 += rank.rank;
           acc.n1++;
         } else {
@@ -219,19 +231,13 @@ class Lab7 extends Component {
     const Fcrit = jStat.normal.inv(0.975, 0, 1) * Math.sqrt(n1 * n2 * (n1 + n2 + 1) / 12);
   
     let conclusion = '';
-    if (F <= Fcrit) {
-      conclusion = `Так как |F| <= F_крит (${F.toFixed(4)} <= ${Fcrit.toFixed(4)}), то нулевая гипотеза о равенстве средних подтверждается с вероятностью 95%.`;
-    } else {
-      conclusion = `Так как |F| > F_крит (${F.toFixed(4)} > ${Fcrit.toFixed(4)}), то нулевая гипотеза о равенстве средних отвергается.`;
-    }
+    if(F<=Fcrit) conclusion = `Так как |F| <= F_крит (${F.toFixed(4)} <= ${Fcrit.toFixed(4)}), то нулевая гипотеза о равенстве средних подтверждается с вероятностью 95%.`;
+    else conclusion = `Так как |F| > F_крит (${F.toFixed(4)} > ${Fcrit.toFixed(4)}), то нулевая гипотеза о равенстве средних отвергается.`;
   
     return {
-      R1,
-      R2,
-      n1,
-      n2,
-      W1,
-      W2,
+      R1, R2,
+      n1, n2,
+      W1, W2,
       W,
       F,
       Fcrit,
@@ -252,40 +258,33 @@ class Lab7 extends Component {
       task: "Задание 2\nПрименить критерий Вилкоксона:\nа) Опытная и контрольная группа до эксперимента;\nб) Опытная и контрольная группа после эксперимента."
     });
   };
+
   dispersionAnalysis = (dataSet1, dataSet2) => {
     const n1 = dataSet1.length;
     const n2 = dataSet2.length;
     const nComparison = n1 === n2 ? "n1 = n2" : n1 > n2 ? "n1 > n2" : "n1 < n2";
-
-    // Преобразуем данные в массив разностей
     const differences = dataSet1.map((value, index) => value - dataSet2[index]);
 
-    // Определяем ранги для разностей
     const ranks = differences
-        .map((value, index) => ({ value: Math.abs(value), sign: Math.sign(value), index }))
-        .sort((a, b) => a.value - b.value)
-        .map((item, index) => ({ ...item, rank: index + 1 }))
-        .sort((a, b) => a.index - b.index)
-        .map(item => item.sign * item.rank);
+      .map((value, index) => ({ value: Math.abs(value), sign: Math.sign(value), index }))
+      .sort((a, b) => a.value - b.value)
+      .map((item, index) => ({ ...item, rank: index + 1 }))
+      .sort((a, b) => a.index - b.index)
+      .map(item => item.sign * item.rank);
 
-    // Считаем сумму рангов положительных разностей
     const R = ranks.reduce((acc, rank) => rank > 0 ? acc + rank : acc, 0);
-
-    // Вычисляем статистику Вилкоксона
     const F = R - (n1 * (n1 + 1)) / 2;
     const Fcrit = jStat.normal.inv(0.975, 0, 1) * Math.sqrt(n1 * n2 * (n1 + n2 + 1) / 12);
 
-    // Формируем вывод
     const isSignificant = Math.abs(F) > Fcrit;
     const conclusion = isSignificant
-        ? `F > Fкрит (${Math.abs(F).toFixed(2)} > ${Fcrit.toFixed(2)}), значит, есть статистически значимые различия.`
-        : `F <= Fкрит (${Math.abs(F).toFixed(2)} <= ${Fcrit.toFixed(2)}), значит, статистически значимых различий нет.`;
+      ? `F > Fкрит (${Math.abs(F).toFixed(2)} > ${Fcrit.toFixed(2)}), значит, есть статистически значимые различия.`
+      : `F <= Fкрит (${Math.abs(F).toFixed(2)} <= ${Fcrit.toFixed(2)}), значит, статистически значимых различий нет.`;
 
     return { n1, n2, nComparison, R, F: Math.abs(F), Fcrit, conclusion };
-};
+  };
 
-// Функция обработки клика по кнопке "Задание 3"
-handleThirdTask = () => {
+  handleThirdTask = () => {
     const beforeResults = this.dispersionAnalysis(this.state.og.before, this.state.kg.before);
     const afterResults = this.dispersionAnalysis(this.state.og.after, this.state.kg.after);
 
@@ -293,11 +292,11 @@ handleThirdTask = () => {
     const resultAfter = `ПОСЛЕ эксперимента:\nn1: ${afterResults.n1},\nn2: ${afterResults.n2},\n${afterResults.nComparison},\nR: ${afterResults.R},\nF: ${afterResults.F.toFixed(2)},\nFкрит: ${afterResults.Fcrit.toFixed(2)},\n${afterResults.conclusion}`;
 
     this.setState({ 
-        result: `${resultBefore}\n${resultAfter}`,
-        difference: 2,
-        task: "Задание 3\nНепараметрический критерий для дисперсий:\nа) Опытная и контрольная группа до эксперимента;\nб) Опытная и контрольная группа после эксперимента."
+      result: `${resultBefore}\n${resultAfter}`,
+      difference: 3,
+      task: "Задание 3\nНепараметрический критерий для дисперсий:\nа) Опытная и контрольная группа до эксперимента;\nб) Опытная и контрольная группа после эксперимента."
     });
-};
+  };
 
 	render(){
 		const {title} = getState().app;
