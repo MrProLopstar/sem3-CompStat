@@ -25,7 +25,7 @@ ChartJS.register(
     LinearScale,
     PointElement,
     LineElement,
-        BarElement,
+    BarElement,
     Title,
     Tooltip,
     Legend,
@@ -33,7 +33,7 @@ ChartJS.register(
 );
 
 class Lab6 extends Component {
-	constructor(props) {
+	constructor(props){
 		super(props);
 		this.state = {
             og: data.og,
@@ -100,22 +100,19 @@ class Lab6 extends Component {
     }
 
     pairedStudentTest = (dataSet, name) => {
-        const diff = dataSet.before.map((before, index) => before - dataSet.after[index]);
+        const diff = dataSet.before.map((before, index) => before-dataSet.after[index]);
         const meanBefore = jStat.mean(dataSet.before);
         const meanAfter = jStat.mean(dataSet.after);
         const meanDiff = jStat.mean(diff);
         const stdDiff = jStat.stdev(diff, true);
         const s2 = jStat.variance(diff, true);
         const n = diff.length;
-        const t = meanDiff / (stdDiff / Math.sqrt(n)); // Расчет t-фактическое
-        const criticalT = jStat.studentt.inv(0.975, n - 1); // Двусторонний t-критерий
+        const t = meanDiff / (stdDiff / Math.sqrt(n));
+        const criticalT = jStat.studentt.inv(0.975, n-1);
     
-        let conclusion = `Вывод: `;
-        if (Math.abs(t) >= criticalT) {
-            conclusion += `так как T фактическое (${t.toFixed(4)}) >= T критическое (${criticalT.toFixed(4)}), то с вероятностью 95% нулевая гипотеза о равенстве средних в ${name} до эксперимента и после него отвергается. Следовательно, значения в ${name} до и после эксперимента не равны. Эксперимент повлиял.`;
-        } else {
-            conclusion += `так как T фактическое (${t.toFixed(4)}) < T критическое (${criticalT.toFixed(4)}), то с вероятностью 95% нулевая гипотеза о равенстве средних в ${name} до эксперимента и после него принимается. Следовательно, значения в ${name} до и после эксперимента равны. Эксперимент не повлиял.`;
-        }
+        let conclusion = `Вывод по изменению длины желчного пузыря: `;
+        if(Math.abs(t)>=criticalT) conclusion += `так как наблюдаемое значение T (${t.toFixed(4)}) превышает критическое T (${criticalT.toFixed(4)}), то изменение считается статистически значимым. Это говорит о влиянии эксперимента на длину желчного пузыря.`;
+        else conclusion += `так как наблюдаемое значение T (${t.toFixed(4)}) меньше критического T (${criticalT.toFixed(4)}), то статистически значимого изменения не обнаружено и эксперимент не повлиял на длину желчного пузыря.`;
     
         return {
             n,
@@ -142,24 +139,24 @@ class Lab6 extends Component {
         const varianceAfterOG = jStat.variance(this.state.og.after, true);
         const varianceAfterKG = jStat.variance(this.state.kg.after, true);
     
-        const fBefore = varianceBeforeOG / varianceBeforeKG;
-        const fAfter = varianceAfterOG / varianceAfterKG;
+        const fBefore = varianceBeforeOG>varianceBeforeKG ? varianceBeforeOG/varianceBeforeKG : varianceBeforeKG/varianceBeforeOG;
+        const fAfter = varianceAfterOG>varianceAfterKG ? varianceAfterOG/varianceAfterKG : varianceAfterKG/varianceAfterOG;
     
-        const dfBeforeOG = this.state.og.before.length - 1;
-        const dfBeforeKG = this.state.kg.before.length - 1;
-        const dfAfterOG = this.state.og.after.length - 1;
-        const dfAfterKG = this.state.kg.after.length - 1;
+        const dfBeforeOG = this.state.og.before.length-1;
+        const dfBeforeKG = this.state.kg.before.length-1;
+        const dfAfterOG = this.state.og.after.length-1;
+        const dfAfterKG = this.state.kg.after.length-1;
         
         const criticalFBefore = jStat.centralF.inv(0.975, dfBeforeOG, dfBeforeKG);
         const criticalFAfter = jStat.centralF.inv(0.975, dfAfterOG, dfAfterKG);
     
-        const conclusionBefore = fBefore >= criticalFBefore ?
-            `F-фактическое (${fBefore.toFixed(4)}) >= F-критическое (${criticalFBefore.toFixed(4)}), нулевая гипотеза отвергается.` :
-            `F-фактическое (${fBefore.toFixed(4)}) < F-критическое (${criticalFBefore.toFixed(4)}), нулевая гипотеза принимается.`;
-        
-        const conclusionAfter = fAfter >= criticalFAfter ?
-            `F-фактическое (${fAfter.toFixed(4)}) >= F-критическое (${criticalFAfter.toFixed(4)}), нулевая гипотеза отвергается.` :
-            `F-фактическое (${fAfter.toFixed(4)}) < F-критическое (${criticalFAfter.toFixed(4)}), нулевая гипотеза принимается.`;
+        const conclusionBefore = fBefore >= criticalFBefore
+        ? `Измерения длины желчного пузыря до эксперимента показывают, что F-фактическое (${fBefore.toFixed(4)}) превышает F-критическое (${criticalFBefore.toFixed(4)}), следовательно, с вероятностью 95% обнаружены статистически значимые различия в дисперсиях.`
+        : `Измерения длины желчного пузыря до эксперимента показывают, что F-фактическое (${fBefore.toFixed(4)}) ниже F-критического (${criticalFBefore.toFixed(4)}), следовательно, статистически значимых различий в дисперсиях не обнаружено.`;
+
+        const conclusionAfter = fAfter >= criticalFAfter
+        ? `Измерения длины желчного пузыря после эксперимента показывают, что F-фактическое (${fAfter.toFixed(4)}) превышает F-критическое (${criticalFAfter.toFixed(4)}), следовательно, с вероятностью 95% обнаружены статистически значимые различия в дисперсиях.`
+        : `Измерения длины желчного пузыря после эксперимента показывают, что F-фактическое (${fAfter.toFixed(4)}) ниже F-критического (${criticalFAfter.toFixed(4)}), следовательно, статистически значимых различий в дисперсиях не обнаружено.`;
     
         this.setState({
             result: `ОГ (До эксперимента):\n` +
@@ -185,7 +182,7 @@ class Lab6 extends Component {
                     `F-крит: ${criticalFAfter.toFixed(4)}\n` +
                     `${conclusionAfter}`,
             difference: 2,
-            task: "Задание 2\nВыполнить проверку гипотезы о равенстве дисперсий для двух независимых выборок с помощью критерия Фишера:\nа) Опытная и контрольная группа до эксперимента;\nб) Опытная и контрольная группа после экспермиента."
+            task: "Задание 2\nВыполнить проверку гипотезы о равенстве дисперсий для двух независимых выборок с помощью критерия Фишера:\nа) Опытная и контрольная группа до эксперимента;\nб) Опытная и контрольная группа после эксперимента."
         });
     };
     
@@ -197,21 +194,33 @@ class Lab6 extends Component {
         const n1 = data1.length;
         const n2 = data2.length;
     
-        const sp = Math.sqrt(((n1 - 1) * sd1 ** 2 + (n2 - 1) * sd2 ** 2) / (n1 + n2 - 2));
-        const tValue = (mean1 - mean2) / (sp * Math.sqrt(1 / n1 + 1 / n2));
-        const criticalT = jStat.studentt.inv(0.975, n1 + n2 - 2);
-        
-        let conclusion = '';
-        if (Math.abs(tValue) >= criticalT) {
-            conclusion = `T фактическое (${tValue.toFixed(4)}) >= T критическое (${criticalT.toFixed(4)}), следовательно, с вероятностью 95% нулевая гипотеза о равенстве средних значений в ОГ и КГ ${period} отвергается.`;
+        const fValue = sd1 ** 2 / sd2 ** 2;
+        const df1 = n1 - 1;
+        const df2 = n2 - 1;
+        const fCritical = jStat.centralF.inv(0.975, df1, df2);
+        const areVariancesEqual = fValue <= fCritical;
+    
+        let tValue, criticalT, df, sp;
+    
+        if(areVariancesEqual){
+            sp = Math.sqrt(((n1 - 1) * sd1 ** 2 + (n2 - 1) * sd2 ** 2) / (n1 + n2 - 2));
+            tValue = (mean1 - mean2) / (sp * Math.sqrt(1 / n1 + 1 / n2));
+            df = n1 + n2 - 2;
         } else {
-            conclusion = `T фактическое (${tValue.toFixed(4)}) < T критическое (${criticalT.toFixed(4)}), следовательно, с вероятностью 95% нулевая гипотеза о равенстве средних значений в ОГ и КГ ${period} принимается.`;
+            tValue = (mean1 - mean2) / Math.sqrt(sd1 ** 2 / n1 + sd2 ** 2 / n2);
+            df = Math.pow(sd1 ** 2 / n1 + sd2 ** 2 / n2, 2) /
+                 (Math.pow(sd1 ** 2 / n1, 2) / df1 + Math.pow(sd2 ** 2 / n2, 2) / df2);
         }
+        criticalT = jStat.studentt.inv(0.975, df);
+    
+        let conclusion = '';
+        if(Math.abs(tValue)>=criticalT) conclusion = `Поскольку T-фактическое (${tValue.toFixed(4)}) превышает T-критическое (${criticalT.toFixed(4)}), то с вероятностью 95% нулевая гипотеза об отсутствии различий в средних значениях длины желчного пузыря в ОГ и КГ ${period} отвергается.`;
+        else conclusion = `Поскольку T-фактическое (${tValue.toFixed(4)}) меньше T-критического (${criticalT.toFixed(4)}), то с вероятностью 95% нулевая гипотеза об отсутствии различий в средних значениях длины желчного пузыря в ОГ и КГ ${period} принимается.`;
     
         return {
             tValue: tValue.toFixed(4),
             criticalT: criticalT.toFixed(4),
-            sd: sp.toFixed(4),
+            sd: sp ? sp.toFixed(4) : 'n/a',
             conclusion: conclusion
         };
     };

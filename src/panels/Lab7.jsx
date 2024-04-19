@@ -63,7 +63,7 @@ class Lab7 extends Component {
     let rank = 1;
 
     while(left<=right){
-      if (rank % 2 !== 0) ranks[left++] = rank;
+      if(rank%2!==0) ranks[left++] = rank;
       else ranks[right--] = rank;
       rank++;
     }
@@ -87,7 +87,7 @@ class Lab7 extends Component {
     let signs = [];
     if(difference===1){
       diffs = dataSet.before.map((before, index) => (before - dataSet.after[index]).toFixed(1));
-      signs = diffs.map(diff => diff > 0 ? "+" : diff < 0 ? "-" : "0");
+      signs = diffs.map(diff => diff > 0 ? "+" : diff < 0 ? "-" : "");
     }
 
     let orderedData = [];
@@ -101,6 +101,31 @@ class Lab7 extends Component {
       orderedData = [...dataSet.before, ...dataSet.after].sort((a, b) => a - b);
       groupNumbers = orderedData.map(value => dataSet.before.includes(value) ? 1 : 2);
       ranks = this.calculateRanksDispersion(orderedData);
+    }
+    if(difference===2 || difference===3){
+      let uniqueValuesWithRanksAndGroups = {};
+      orderedData.forEach((value, index) => {
+        if(!uniqueValuesWithRanksAndGroups.hasOwnProperty(value)) uniqueValuesWithRanksAndGroups[value] = { ranks: [], groupNumbers: [] };
+        uniqueValuesWithRanksAndGroups[value].ranks.push(ranks[index]);
+        uniqueValuesWithRanksAndGroups[value].groupNumbers.push(groupNumbers[index]);
+      });
+      
+      for(let value in uniqueValuesWithRanksAndGroups){
+        let averageRank = uniqueValuesWithRanksAndGroups[value].ranks.reduce((a, b) => a + b, 0) / uniqueValuesWithRanksAndGroups[value].ranks.length;
+        uniqueValuesWithRanksAndGroups[value].averageRank = averageRank;
+        
+        let mostFrequentGroup = uniqueValuesWithRanksAndGroups[value].groupNumbers.reduce(
+          (acc, groupNumber) => {
+            acc[groupNumber] = (acc[groupNumber] || 0) + 1;
+            return acc;
+          }, {}
+        );
+        mostFrequentGroup = Object.entries(mostFrequentGroup).sort((a, b) => b[1]-a[1])[0][0];
+        uniqueValuesWithRanksAndGroups[value].mostFrequentGroup = mostFrequentGroup;
+      }
+      orderedData = Object.keys(uniqueValuesWithRanksAndGroups).map(x => Number(x));
+      ranks = Object.values(uniqueValuesWithRanksAndGroups).map(x => x.averageRank);
+      groupNumbers = Object.values(uniqueValuesWithRanksAndGroups).map(x => x.mostFrequentGroup);
     }
 
     return (
@@ -136,15 +161,15 @@ class Lab7 extends Component {
           {difference === 1 && (
             <>
               <tr>
-                {["До-После", ...diffs].map((value, index) => {
-                  index==0 ? 
-                    <th key={index} className="table-cell">{value}</th> :
-                    <td key={index} className="table-cell">{diffs[index-1]}</td>
-                })}
+                <th className="table-cell">До-После</th>
+                {diffs.map((diff, index) => (
+                  <td key={index} className="table-cell">{diff}</td>
+                ))}
               </tr>
               <tr>
-                {["Знаки", ...signs].map((value, index) => (
-                  <td key={index} className="table-cell">{index === 0 ? value : signs[index-1]}</td>
+                <th className="table-cell">Знаки</th>
+                {signs.map((sign, index) => (
+                  <td key={index} className="table-cell">{sign}</td>
                 ))}
               </tr>
             </>
@@ -164,7 +189,7 @@ class Lab7 extends Component {
                 ))}
               </tr>
               <tr>
-                <th className="table-cell">Ранги для критерия о равенстве дисперсий</th>
+                <th className="table-cell">{difference==2 ? "Ранги для критерия Вилкоксона" : "Ранги для критерия о равенстве дисперсий"}</th>
                 {ranks.map((value, index) => (
                   <td key={index} className="table-cell">{index === 0 ? value : value}</td>
                 ))}
@@ -185,12 +210,12 @@ class Lab7 extends Component {
     const Fcrit = jStat.normal.inv(0.975, 0, 1) * Math.sqrt(n);
   
     let conclusion = '';
-    if(Math.abs(F)>=Fcrit) conclusion = `Так как F >= F_крит (${F.toFixed(4)} >= ${Fcrit.toFixed(4)}), то нулевая гипотеза о равенстве средних отвергается.`;
-    else conclusion = `Так как F < F_крит (${F.toFixed(4)} < ${Fcrit.toFixed(4)}), то нулевая гипотеза о равенстве средних принимается.`;
-  
+    if (Math.abs(F) >= Fcrit) conclusion = `По результатам измерений длины желчного пузыря на УЗИ внутренних органов обнаружено, что значение F (${F.toFixed(4)}) превышает критическое значение Fкрит (${Fcrit.toFixed(4)}). Это означает, что существует статистически значимое различие в средних значениях до и после эксперимента, и, следовательно, нулевая гипотеза о равенстве средних отвергается.`;
+    else conclusion = `По результатам измерений длины желчного пузыря на УЗИ внутренних органов обнаружено, что значение F (${F.toFixed(4)}) не превышает критическое значение Fкрит (${Fcrit.toFixed(4)}). Это означает, что статистически значимого различия в средних значениях до и после эксперимента не обнаружено, и, следовательно, нулевая гипотеза о равенстве средних принимается.`;
+      
     return {
-      r: positiveCount,
-      l: negativeCount,
+      r: Math.max(positiveCount, negativeCount),
+      l: positiveCount+negativeCount,
       F: F.toFixed(4),
       Fcrit: Fcrit.toFixed(4),
       conclusion
@@ -244,12 +269,17 @@ class Lab7 extends Component {
     const W1 = R1 - (n1 * (n1 + 1)) / 2;
     const W2 = R2 - (n2 * (n2 + 1)) / 2;
     const W = Math.min(W1, W2);
-    const F = Math.abs(W);
-    const Fcrit = jStat.normal.inv(0.975, 0, 1) * Math.sqrt(n1 * n2 * (n1 + n2 + 1) / 12);
+
+    const numerator = W - 0.5 * n1 * n2;
+    const denominator = Math.sqrt(1.0 / 12.0 * n1 * n2 * (n1 + n2 + 1.0));
+    const F = Math.abs(Math.round(numerator / denominator * 1000) / 1000);
+
+    const alpha = 0.05;
+    const Fcrit = Math.round(jStat.normal.inv(1 - alpha / 2, 0, 1) * 1000) / 1000;
   
     let conclusion = '';
-    if(F<=Fcrit) conclusion = `Так как |F| <= F_крит (${F.toFixed(4)} <= ${Fcrit.toFixed(4)}), то нулевая гипотеза о равенстве средних подтверждается с вероятностью 95%.`;
-    else conclusion = `Так как |F| > F_крит (${F.toFixed(4)} > ${Fcrit.toFixed(4)}), то нулевая гипотеза о равенстве средних отвергается.`;
+    if(Math.abs(F)<=Fcrit) conclusion = `Так как |F| <= F_крит (${F.toFixed(4)} <= ${Fcrit.toFixed(4)}), то с вероятностью 95% нулевая гипотеза о равенстве средних значений длины желчного пузыря на УЗИ внутренних органов до и после воздействия подтверждается.`;
+    else conclusion = `Так как |F| > F_крит (${F.toFixed(4)} > ${Fcrit.toFixed(4)}), то с вероятностью 95% нулевая гипотеза о равенстве средних значений длины желчного пузыря на УЗИ внутренних органов до и после воздействия отвергается.`;
   
     return {
       R1, R2,
@@ -290,13 +320,18 @@ class Lab7 extends Component {
       .map(item => item.sign * item.rank);
 
     const R = ranks.reduce((acc, rank) => rank > 0 ? acc + rank : acc, 0);
-    const F = R - (n1 * (n1 + 1)) / 2;
-    const Fcrit = jStat.normal.inv(0.975, 0, 1) * Math.sqrt(n1 * n2 * (n1 + n2 + 1) / 12);
+
+    const meanR = n1 * (n1 + 1) / 4;
+    const stdR = Math.sqrt(n1 * (n1 + 1) * (2 * n1 + 1) / 24);
+    const F = (R - meanR) / stdR;
+
+    const alpha = 0.05;
+    const Fcrit = Math.round(jStat.normal.inv(1 - alpha / 2, 0, 1) * 1000) / 1000;
 
     const isSignificant = Math.abs(F) > Fcrit;
     const conclusion = isSignificant
-      ? `F > Fкрит (${Math.abs(F).toFixed(2)} > ${Fcrit.toFixed(2)}), значит, есть статистически значимые различия.`
-      : `F <= Fкрит (${Math.abs(F).toFixed(2)} <= ${Fcrit.toFixed(2)}), значит, статистически значимых различий нет.`;
+      ? `По данным УЗИ, длина желчного пузыря значимо изменилась (|F| > Fкрит: ${Math.abs(F).toFixed(4)} > ${Fcrit.toFixed(4)}).`
+      : `Изменения длины желчного пузыря на УЗИ не являются статистически значимыми (|F| <= Fкрит: ${Math.abs(F).toFixed(4)} <= ${Fcrit.toFixed(4)}).`;
 
     return { n1, n2, nComparison, R, F: Math.abs(F), Fcrit, conclusion };
   };
@@ -309,7 +344,7 @@ class Lab7 extends Component {
     const resultAfter = `ПОСЛЕ эксперимента:\nn1: ${afterResults.n1},\nn2: ${afterResults.n2},\n${afterResults.nComparison},\nR: ${afterResults.R},\nF: ${afterResults.F.toFixed(2)},\nFкрит: ${afterResults.Fcrit.toFixed(2)},\n${afterResults.conclusion}`;
 
     this.setState({ 
-      result: `${resultBefore}\n${resultAfter}`,
+      result: `${resultBefore}\n\n${resultAfter}`,
       difference: 3,
       task: "Задание 3\nНепараметрический критерий для дисперсий:\nа) Опытная и контрольная группа до эксперимента;\nб) Опытная и контрольная группа после эксперимента."
     });

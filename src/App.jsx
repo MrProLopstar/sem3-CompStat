@@ -13,6 +13,7 @@ import Lab4 from './panels/Lab4.jsx';
 import Lab5 from './panels/Lab5.jsx';
 import Lab6 from './panels/Lab6.jsx';
 import Lab7 from './panels/Lab7.jsx';
+import Lab8 from './panels/Lab8.jsx';
 
 class App extends Component {
   constructor(props){
@@ -69,7 +70,7 @@ class App extends Component {
                     onSwipeBack={() => { dispatch(goBack()); }}
                   >
                     <Hub id='hub'/>
-                    {[Lab1,Lab2,Lab2_v2,Lab3,Lab4,Lab5,Lab6,Lab7].map((L,i) => (
+                    {[Lab1,Lab2,Lab2_v2,Lab3,Lab4,Lab5,Lab6,Lab7,Lab8].map((L,i) => (
                       <L id={'lab'+(i+1)} num={i==2 ? 1 : i+1}/>
                     ))}
                   </View>
