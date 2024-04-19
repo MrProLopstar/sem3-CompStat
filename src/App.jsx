@@ -4,6 +4,8 @@ import queryString from 'query-string';
 import {AppRoot, ConfigProvider, AdaptivityProvider, withPlatform, View, ModalRoot, SplitCol, SplitLayout, Epic, Tabbar, TabbarItem, Counter, ModalPage, ModalPageHeader, PanelHeaderButton,Snackbar,Avatar} from '@vkontakte/vkui';
 import {Icon28AddCircleOutline,Icon28ArchiveOutline,Icon28RectangleSplit4UnevenOutline,Icon28ListOutline} from '@vkontakte/icons';
 import store, {dispatch} from './main.jsx';
+import {setPage} from './store/router';
+import {setPageState} from './store/app';
 import Hub from './panels/Hub.jsx';
 import Lab1 from './panels/Lab1.jsx';
 import Lab2 from './panels/Lab2.jsx';
@@ -14,6 +16,7 @@ import Lab5 from './panels/Lab5.jsx';
 import Lab6 from './panels/Lab6.jsx';
 import Lab7 from './panels/Lab7.jsx';
 import Lab8 from './panels/Lab8.jsx';
+const labs = [Lab1,Lab2,Lab2_v2,Lab3,Lab4,Lab5,Lab6,Lab7,Lab8];
 
 class App extends Component {
   constructor(props){
@@ -28,6 +31,14 @@ class App extends Component {
       if(this.state.reduxState!==newReduxState) this.setState({ reduxState: newReduxState });
     });
     window.addEventListener('resize', () => this.forceUpdate());
+    const parsedUrl = queryString.parse(window.location.search);
+    if(parsedUrl.lab){
+      const labNumber = parseInt(parsedUrl.lab, 10);
+      if(!isNaN(labNumber) && labNumber >= 1 && labNumber <= labs.length){
+        dispatch(setPage(['labs','lab'+labNumber]));
+        dispatch(setPageState({title: 'Лабораторная работа №'+(i>1 ? (i==2 ? `2 (V2)` : i) : i+1), arr: i==0 ? lab1 : null}));
+      }
+    }
   }
 
   render(){
@@ -70,7 +81,7 @@ class App extends Component {
                     onSwipeBack={() => { dispatch(goBack()); }}
                   >
                     <Hub id='hub'/>
-                    {[Lab1,Lab2,Lab2_v2,Lab3,Lab4,Lab5,Lab6,Lab7,Lab8].map((L,i) => (
+                    {labs.map((L,i) => (
                       <L id={'lab'+(i+1)} num={i==2 ? 1 : i+1}/>
                     ))}
                   </View>
