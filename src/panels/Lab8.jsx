@@ -98,6 +98,12 @@ class Lab8 extends Component {
         <FormItem>
           <Button mode="secondary" stretched onClick={this.calculatePearson}>Задание 1</Button>
         </FormItem>
+        <FormItem>
+          <Textarea
+            readonly
+            value="Задание: Для данных, приведенных в варианте, провести линейный корреляционный и регрессионный анализ.\nНайти число заболеваний кариесом у детей при потреблении ими рафинированных углеводов 55 граммов в сутки, определить, при каком потреблении рафинированных углеводов распространенность кариеса составит 900 детей (в расчете на 1000 детей)."
+          />
+        </FormItem>
         {pearsonResult && (
           <>
             <FormItem>
