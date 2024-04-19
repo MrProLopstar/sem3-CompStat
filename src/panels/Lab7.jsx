@@ -285,7 +285,7 @@ class Lab7 extends Component {
     const ranks = differences
       .map((value, index) => ({ value: Math.abs(value), sign: Math.sign(value), index }))
       .sort((a, b) => a.value - b.value)
-      .map((item, index) => ({ ...item, rank: index + 1 }))
+      .map((item, index) => ({ ...item, rank: index+1 }))
       .sort((a, b) => a.index - b.index)
       .map(item => item.sign * item.rank);
 
@@ -347,13 +347,13 @@ class Lab7 extends Component {
         </FormLayoutGroup>
         {task && <FormItem>
           <Textarea
-            disabled
+            readonly
             value={task}
           />
         </FormItem>}
         {result && <FormItem>
           <Textarea
-            disabled
+            readonly
             value={result}
             maxHeight={2000}
           />

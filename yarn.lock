@@ -1077,11 +1077,12 @@ __metadata:
     react: "npm:^18.2.0"
     react-chartjs-2: "npm:^5.2.0"
     react-dom: "npm:^18.2.0"
+    react-icons: "npm:^5.1.0"
     react-redux: "npm:^9.1.0"
     react-table: "npm:^7.8.0"
     redux-logger: "npm:^3.0.6"
     uuid: "npm:^9.0.1"
-    vite: "npm:^5.2.8"
+    vite: "npm:^5.2.9"
   languageName: unknown
   linkType: soft
 
@@ -1427,6 +1428,15 @@ __metadata:
   peerDependencies:
     react: ^18.2.0
   checksum: 10c0/66dfc5f93e13d0674e78ef41f92ed21dfb80f9c4ac4ac25a4b51046d41d4d2186abc915b897f69d3d0ebbffe6184e7c5876f2af26bfa956f179225d921be713a
+  languageName: node
+  linkType: hard
+
+"react-icons@npm:^5.1.0":
+  version: 5.1.0
+  resolution: "react-icons@npm:5.1.0"
+  peerDependencies:
+    react: "*"
+  checksum: 10c0/f01648bbf37854510a568c1ac4aeb1c23f734f2ff3a9e94d624bc039ff6291d83ea83281a1380e8105b3f1819bb359a6f34326a5cefbfbced1024b4b81493e01
   languageName: node
   linkType: hard
 
@@ -1795,9 +1805,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:^5.2.8":
-  version: 5.2.8
-  resolution: "vite@npm:5.2.8"
+"vite@npm:^5.2.9":
+  version: 5.2.9
+  resolution: "vite@npm:5.2.9"
   dependencies:
     esbuild: "npm:^0.20.1"
     fsevents: "npm:~2.3.3"
@@ -1831,7 +1841,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 10c0/b5717bb00c2570c08ff6d8ed917655e79184efcafa9dd62d52eea19c5d6dfc5a708ec3de9ebc670a7165fc5d401c2bdf1563bb39e2748d8e51e1593d286a9a13
+  checksum: 10c0/2bf8faa7ae84d5fffabc28b2b2462128a839b8a7ce6d4dde1794975c8c896443df49a54ef95ad8f0326457648426fd9317a618479ef28049cb195d91985729ed
   languageName: node
   linkType: hard
 
