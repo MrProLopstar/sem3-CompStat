@@ -5,11 +5,11 @@ import store, {dispatch} from '../main.jsx';
 import {setPage, goBack} from '../store/router';
 import {setPageState} from '../store/app';
 import lab1 from '../data/lab1.json';
-import { TbCircleDashedNumber1, TbCircleDashedNumber2, TbCircleDashedNumber3, TbCircleDashedNumber4, TbCircleDashedNumber5, TbCircleDashedNumber6, TbCircleDashedNumber7, TbCircleDashedNumber8 } from "react-icons/tb";
+import { TbCircleDashedNumber1, TbCircleDashedNumber2, TbCircleDashedNumber3, TbCircleDashedNumber4, TbCircleDashedNumber5, TbCircleDashedNumber6, TbCircleDashedNumber7, TbCircleDashedNumber8, TbCircleDashedNumber9 } from "react-icons/tb";
 const iconStyle = {
   marginTop: 5
 };
-const icons = [<TbCircleDashedNumber1 style={iconStyle}/>, <TbCircleDashedNumber2 style={iconStyle}/>, <TbCircleDashedNumber3 style={iconStyle}/>, <TbCircleDashedNumber4 style={iconStyle}/>, <TbCircleDashedNumber5 style={iconStyle}/>, <TbCircleDashedNumber6 style={iconStyle}/>, <TbCircleDashedNumber7 style={iconStyle}/>, <TbCircleDashedNumber8 style={iconStyle}/>];
+const icons = [<TbCircleDashedNumber1 style={iconStyle}/>, <TbCircleDashedNumber2 style={iconStyle}/>, <TbCircleDashedNumber3 style={iconStyle}/>, <TbCircleDashedNumber4 style={iconStyle}/>, <TbCircleDashedNumber5 style={iconStyle}/>, <TbCircleDashedNumber6 style={iconStyle}/>, <TbCircleDashedNumber7 style={iconStyle}/>, <TbCircleDashedNumber8 style={iconStyle}/>, <TbCircleDashedNumber9 style={iconStyle}/>];
 
 
 class Main extends Component {
@@ -24,7 +24,7 @@ class Main extends Component {
     return(
       <Panel>
 				<PanelHeader>Лабораторные работы Гостяева Ярослава</PanelHeader>
-        {new Array(9).fill(0).map((x,i) => (
+        {new Array(10).fill(0).map((x,i) => (
           <Button key={i+1} mode={(i+1)%3===1 ? 'secondary' : ((i+1)%3===2 ? 'primary' : 'outline')}
             after={i>1 ? (i==2 ? icons[1] : icons[i-1]) : icons[i]}
             before={i>1 ? (i==2 ? icons[1] : icons[i-1]) : icons[i]}
