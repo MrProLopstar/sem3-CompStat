@@ -123,9 +123,9 @@ class Lab7 extends Component {
         mostFrequentGroup = Object.entries(mostFrequentGroup).sort((a, b) => b[1]-a[1])[0][0];
         uniqueValuesWithRanksAndGroups[value].mostFrequentGroup = mostFrequentGroup;
       }
-      orderedData = Object.keys(uniqueValuesWithRanksAndGroups).map(x => Number(x));
-      ranks = Object.values(uniqueValuesWithRanksAndGroups).map(x => x.averageRank);
-      groupNumbers = Object.values(uniqueValuesWithRanksAndGroups).map(x => x.mostFrequentGroup);
+      orderedData = Object.keys(uniqueValuesWithRanksAndGroups).sort((a, b) => a - b).map(Number);
+      ranks = orderedData.map(value => uniqueValuesWithRanksAndGroups[value].averageRank);
+      groupNumbers = orderedData.map(value => uniqueValuesWithRanksAndGroups[value].mostFrequentGroup);
     }
 
     return (

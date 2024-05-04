@@ -59,16 +59,13 @@ class Lab8 extends Component {
     const tCritical = jStat.studentt.inv(1 - alpha / 2, n - 2);
     const isSignificant = Math.abs(rXY) > tCritical / Math.sqrt(n - 2 + Math.pow(tCritical, 2));
 
-    let svyaz = "прямая", power = "слабая", str = "увеличивается";
+    let svyaz = "положительная", power = "слабая", str = "увеличивается";
     if (rXY < 0) {
-      svyaz = "обратная";
+      svyaz = "отрицательная";
       str = "уменьшается";
     }
-    if (Math.abs(rXY) >= 0.3 && Math.abs(rXY) <= 0.7) {
-      power = "умеренная";
-    } else if (Math.abs(rXY) > 0.7) {
-      power = "сильная";
-    }
+    if (Math.abs(rXY) >= 0.3 && Math.abs(rXY) <= 0.7) power = "умеренная";
+    else if (Math.abs(rXY) > 0.7) power = "сильная";
 
     const Z = 0.5 * Math.log((1 + rXY) / (1 - rXY));
     const z1 = Z - jStat.normal.inv(1 - alpha / 2, 0, 1) / Math.sqrt(n - 3);
@@ -76,10 +73,12 @@ class Lab8 extends Component {
     const r1 = (Math.exp(2 * z1) - 1) / (Math.exp(2 * z1) + 1);
     const r2 = (Math.exp(2 * z2) - 1) / (Math.exp(2 * z2) + 1);
 
+    const ner = `(${Math.abs(rXY).toFixed(4)}>${(tCritical / Math.sqrt(n - 2 + Math.pow(tCritical, 2))).toFixed(4)})`;
+
     const resPearson = `x* = ${xMean.toFixed(2)}\ny* = ${yMean.toFixed(2)}\nQx = ${Qx.toFixed(2)}\nQy = ${Qy.toFixed(2)}\nQxy = ${Qxy.toFixed(2)}\nrXY = ${rXY.toFixed(2)}\n` +
       `Так как коэффициент корреляции ${svyaz}, то между возрастом детей и частотой дыхания есть ${power} ${svyaz} связь. Эта связь заключается в том, что при увеличении возраста ${str} частота дыхания.\n\n` +
       `n = ${n}\nt a/2(n-2) = ${tCritical.toFixed(2)}\n` +
-      `${isSignificant ? `Так как неравенство верное, то нулевая гипотеза отвергается, т.е. коэффициент корреляции является значимым.` : `Так как неравенство неверное, то нулевая гипотеза принимается, т.е. коэффициент корреляции не является значимым.`}\n` +
+      `${isSignificant ? `Так как неравенство ${ner} верное, то нулевая гипотеза отвергается, т.е. коэффициент корреляции является значимым.` : `Так как неравенство ${ner} неверное, то нулевая гипотеза принимается, т.е. коэффициент корреляции не является значимым.`}\n` +
       `Z = ${Z.toFixed(3)}\nz1 = ${z1.toFixed(3)}     ${r1.toFixed(2)}<rXY<${r2.toFixed(2)}\nz2 = ${z2.toFixed(3)}\n` +
       `С вероятностью 95% коэффициент корреляции находится в пределах от ${r1.toFixed(2)} до ${r2.toFixed(2)}`;
     //////////
@@ -87,7 +86,7 @@ class Lab8 extends Component {
     const a = yMean - b * xMean;
 
     const sb = Math.sqrt((1 - rXY ** 2) * Qy / ((n - 2) * Qx));
-    const T = b / sb;
+    const T = Math.abs(b / sb);
     const tcrit = jStat.studentt.inv(1 - alpha / 2, n - 2);
 
     const f = (rXY ** 2) * (n - 2) / (1 - rXY ** 2);
@@ -98,14 +97,20 @@ class Lab8 extends Component {
 
 
     const resRegres = `a = ${a.toFixed(3)}\nb = ${b.toFixed(3)}\n` +
-      `Уравнение линейной регрессии: y* = ${a.toFixed(3)} + ${b.toFixed(3)}x\n` +
-      `sb = ${sb.toFixed(2)}\nT = ${T.toFixed(2)}\nt крит. = ${tcrit.toFixed(2)}\n` +
-      `${T >= tcrit ? `Коэффициент b значим` : `Коэффициент b не значим`}\n` +
-      `F = ${f.toFixed(2)}\nF крит. = ${Fcrit.toFixed(2)}\n` +
-      `${f >= Fcrit ? `Линейная регрессионная модель значима` : `Линейная регрессионная модель не значима`}\n\n` +
-      `ЧД = ${a.toFixed(2)} + ${b.toFixed(2)} * Возраст\n` +
-      `ЧД в возрасте 6 лет: ${predictedCDAtSix.toFixed(2)} взд/мин\n` +
-      `Возраст, при котором ЧД составляет 22 взд/мин: ${ageWhenCDIsTwentyTwo.toFixed(2)} лет\n`;
+  `Уравнение линейной регрессии: y* = ${a.toFixed(3)} + ${b.toFixed(3)}x\n` +
+  `sb = ${sb.toFixed(2)}\nT = ${T.toFixed(2)}\nt крит. = ${tcrit.toFixed(2)}\n` +
+  `${T >= tcrit ? `Коэффициент b значим` : `Коэффициент b не значим`}\n` +
+  `F = ${f.toFixed(2)}\nF крит. = ${Fcrit.toFixed(2)}\n` +
+  `${f >= Fcrit ? `Линейная регрессионная модель значима` : `Линейная регрессионная модель не значима`}\n\n` +
+  `ЧД = ${a.toFixed(2)} + ${b.toFixed(2)} * Возраст\n` +
+  `ЧД в возрасте 6 лет: ${predictedCDAtSix.toFixed(2)} взд/мин\n` +
+  `Возраст, при котором ЧД составляет 22 взд/мин: ${ageWhenCDIsTwentyTwo.toFixed(2)} лет\n` +
+  `Значение коэффициента наклона b = ${b.toFixed(3)} указывает на ${b < 0 ? 'отрицательную' : 'положительную'} связь ` +
+  `между возрастом и частотой дыхания. Данное значение показывает, что с каждым годом частота дыхания ` +
+  `${b < 0 ? 'уменьшается' : 'увеличивается'} в среднем на ${Math.abs(b).toFixed(3)} вздохов в минуту. ` +
+  `Поскольку значение T = ${T.toFixed(2)} превышает t критическое = ${tcrit.toFixed(2)}, ` +
+  `мы отвергаем нулевую гипотезу о том, что между возрастом и частотой дыхания нет связи, ` +
+  `таким образом подтверждая статистическую значимость коэффициента b.`;
 
     const fittingChartData = {
       labels: data.map(pair => pair.x),
@@ -219,8 +224,8 @@ class Lab8 extends Component {
   render() {
     const { title } = getState().app;
     const { table1Data, table2Data, resPearson, resRegres, fittingChartData, residualsChartData } = this.state;
-    const table1Headers = ['xi', 'yi', '(xi-x*)^2', '(yi-y*)^2', '(xi-x*)*(yi-y*)'];
-    const table2Headers = ['xi', 'yi', 'y*(xi)', 'yi-y*(xi)'];
+    const table1Headers = ['xi (Возраст, лет)', 'yi (Частота дыхания, взд/мин)', '(xi-x*)^2', '(yi-y*)^2', '(xi-x*)*(yi-y*)'];
+    const table2Headers = ['xi (Возраст, лет)', 'yi (Частота дыхания, взд/мин)', 'y*(xi)', 'yi-y*(xi)'];
     return (
       <Panel>
         <PanelHeader before={<Icon24Back onClick={() => dispatch(goBack())} />}>{title}</PanelHeader>
