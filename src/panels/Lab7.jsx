@@ -87,117 +87,104 @@ class Lab7 extends Component {
     let signs = [];
     if(difference===1){
       diffs = dataSet.before.map((before, index) => (before - dataSet.after[index]).toFixed(1));
-      signs = diffs.map(diff => diff > 0 ? "+" : diff < 0 ? "-" : "");
+      signs = diffs.map(diff => diff>0 ? "+" : diff<0 ? "-" : "");
     }
 
     let orderedData = [];
     let groupNumbers = [];
     let ranks = [];
     if(difference===2){
-      orderedData = [...dataSet.before, ...dataSet.after].sort((a, b) => a - b);
+      orderedData = [...dataSet.before, ...dataSet.after];
+      orderedData.sort((a, b) => a-b);
       groupNumbers = orderedData.map(value => dataSet.before.includes(value) ? 1 : 2);
       ranks = this.calculateRanksWilcoxon(orderedData);
-    } else if(difference ===3){
-      orderedData = [...dataSet.before, ...dataSet.after].sort((a, b) => a - b);
+    } else if(difference===3){
+      orderedData = [...dataSet.before, ...dataSet.after];
+      orderedData.sort((a, b) => a-b);
       groupNumbers = orderedData.map(value => dataSet.before.includes(value) ? 1 : 2);
       ranks = this.calculateRanksDispersion(orderedData);
     }
+
     if(difference===2 || difference===3){
-      let uniqueValuesWithRanksAndGroups = {};
+      const rankMap = {};
       orderedData.forEach((value, index) => {
-        if(!uniqueValuesWithRanksAndGroups.hasOwnProperty(value)) uniqueValuesWithRanksAndGroups[value] = { ranks: [], groupNumbers: [] };
-        uniqueValuesWithRanksAndGroups[value].ranks.push(ranks[index]);
-        uniqueValuesWithRanksAndGroups[value].groupNumbers.push(groupNumbers[index]);
+          if(!rankMap[value]) rankMap[value] = {sumRanks: 0, count: 0};
+          rankMap[value].sumRanks += ranks[index];
+          rankMap[value].count += 1;
       });
-      
-      for(let value in uniqueValuesWithRanksAndGroups){
-        let averageRank = uniqueValuesWithRanksAndGroups[value].ranks.reduce((a, b) => a + b, 0) / uniqueValuesWithRanksAndGroups[value].ranks.length;
-        uniqueValuesWithRanksAndGroups[value].averageRank = averageRank;
-        
-        let mostFrequentGroup = uniqueValuesWithRanksAndGroups[value].groupNumbers.reduce(
-          (acc, groupNumber) => {
-            acc[groupNumber] = (acc[groupNumber] || 0) + 1;
-            return acc;
-          }, {}
-        );
-        mostFrequentGroup = Object.entries(mostFrequentGroup).sort((a, b) => b[1]-a[1])[0][0];
-        uniqueValuesWithRanksAndGroups[value].mostFrequentGroup = mostFrequentGroup;
-      }
-      orderedData = Object.keys(uniqueValuesWithRanksAndGroups).sort((a, b) => a - b).map(Number);
-      ranks = orderedData.map(value => uniqueValuesWithRanksAndGroups[value].averageRank);
-      groupNumbers = orderedData.map(value => uniqueValuesWithRanksAndGroups[value].mostFrequentGroup);
+      ranks = orderedData.map(value => rankMap[value].sumRanks/rankMap[value].count);
     }
 
     return (
-      <table>
-        <tbody>
-          {(difference === 0 || difference === 1) ? (
-            <>
-              <tr>
-                {["До", ...dataSet.before].map((value, index) => (
-                  <td key={index} className="table-cell">{value}</td>
-                ))}
-              </tr>
-              <tr>
-                {["После", ...dataSet.after].map((value, index) => (
-                  <td key={index} className="table-cell">{value}</td>
-                ))}
-              </tr>
-            </>
-          ) : (
-            <>
-              <tr>
-                {["ОГ "+(before ? "До" : "После"), ...(before ? dataSet.before : dataSet.after)].map((value, index) => (
-                  <td key={index} className="table-cell">{value}</td>
-                ))}
-              </tr>
-              <tr>
-                {["КГ "+(before ? "До" : "После"), ...(before ? dataSet1.before : dataSet1.after)].map((value, index) => (
-                  <td key={index} className="table-cell">{value}</td>
-                ))}
-              </tr>
-            </>
-          )}
-          {difference === 1 && (
-            <>
-              <tr>
-                <th className="table-cell">До-После</th>
-                {diffs.map((diff, index) => (
-                  <td key={index} className="table-cell">{diff}</td>
-                ))}
-              </tr>
-              <tr>
-                <th className="table-cell">Знаки</th>
-                {signs.map((sign, index) => (
-                  <td key={index} className="table-cell">{sign}</td>
-                ))}
-              </tr>
-            </>
-          )}
-          {(difference === 2 || difference === 3) && (
-            <>
-              <tr>
-                <th className="table-cell">Данные в порядке возрастания</th>
-                {orderedData.map((value, index) => (
-                  <td key={index} className="table-cell">{value.toFixed(1)}</td>
-                ))}
-              </tr>
-              <tr>
-                <th className="table-cell">№ группы</th>
-                {groupNumbers.map((value, index) => (
-                  <td key={index} className="table-cell">{value}</td>
-                ))}
-              </tr>
-              <tr>
-                <th className="table-cell">{difference==2 ? "Ранги для критерия Вилкоксона" : "Ранги для критерия о равенстве дисперсий"}</th>
-                {ranks.map((value, index) => (
-                  <td key={index} className="table-cell">{index === 0 ? value : value}</td>
-                ))}
-              </tr>
-            </>
-          )}
-        </tbody>
-      </table>
+        <table>
+            <tbody>
+                {(difference===0 || difference===1) ? (
+                    <>
+                        <tr>
+                            {["До", ...dataSet.before].map((value, index) => (
+                                <td key={index} className="table-cell">{value}</td>
+                            ))}
+                        </tr>
+                        <tr>
+                            {["После", ...dataSet.after].map((value, index) => (
+                                <td key={index} className="table-cell">{value}</td>
+                            ))}
+                        </tr>
+                    </>
+                ) : (
+                    <>
+                        <tr>
+                            {["ОГ " + (before ? "До" : "После"), ...(before ? dataSet.before : dataSet.after)].map((value, index) => (
+                                <td key={index} className="table-cell">{value}</td>
+                            ))}
+                        </tr>
+                        <tr>
+                            {["КГ " + (before ? "До" : "После"), ...(before ? dataSet1.before : dataSet1.after)].map((value, index) => (
+                                <td key={index} className="table-cell">{value}</td>
+                            ))}
+                        </tr>
+                    </>
+                )}
+                {difference===1 && (
+                    <>
+                        <tr>
+                            <th className="table-cell">До-После</th>
+                            {diffs.map((diff, index) => (
+                                <td key={index} className="table-cell">{diff}</td>
+                            ))}
+                        </tr>
+                        <tr>
+                            <th className="table-cell">Знаки</th>
+                            {signs.map((sign, index) => (
+                                <td key={index} className="table-cell">{sign}</td>
+                            ))}
+                        </tr>
+                    </>
+                )}
+                {(difference===2 || difference===3) && (
+                    <>
+                        <tr>
+                            <th className="table-cell">Данные в порядке возрастания</th>
+                            {orderedData.map((value, index) => (
+                                <td key={index} className="table-cell">{value.toFixed(1)}</td>
+                            ))}
+                        </tr>
+                        <tr>
+                            <th className="table-cell">№ группы</th>
+                            {groupNumbers.map((value, index) => (
+                                <td key={index} className="table-cell">{value}</td>
+                            ))}
+                        </tr>
+                        <tr>
+                            <th className="table-cell">{difference == 2 ? "Ранги для критерия Вилкоксона" : "Ранги для критерия о равенстве дисперсий"}</th>
+                            {ranks.map((value, index) => (
+                              <td key={index} className="table-cell">{value}</td>
+                            ))}
+                        </tr>
+                    </>
+                )}
+            </tbody>
+        </table>
     );
   };
   
@@ -241,7 +228,7 @@ class Lab7 extends Component {
     return array1.map(value => ranks.find(item => item.value === value).rank);
   };
   
-  wilcoxonTest = (dataSet1, dataSet2) => {
+  wilcoxonTest = (dataSet1, dataSet2, after) => {
     const allValues = [...dataSet1, ...dataSet2];
     const sortedValues = allValues.slice().sort((a, b) => a - b);
     const ranks = sortedValues.map((value, index) => {
@@ -278,8 +265,8 @@ class Lab7 extends Component {
     const Fcrit = Math.round(jStat.normal.inv(1 - alpha / 2, 0, 1) * 1000) / 1000;
   
     let conclusion = '';
-    if(Math.abs(F)<=Fcrit) conclusion = `Так как |F| <= F_крит (${F.toFixed(4)} <= ${Fcrit.toFixed(4)}), то с вероятностью 95% нулевая гипотеза о равенстве средних значений длины желчного пузыря на УЗИ внутренних органов до и после воздействия подтверждается.`;
-    else conclusion = `Так как |F| > F_крит (${F.toFixed(4)} > ${Fcrit.toFixed(4)}), то с вероятностью 95% нулевая гипотеза о равенстве средних значений длины желчного пузыря на УЗИ внутренних органов до и после воздействия отвергается.`;
+    if(Math.abs(F)<=Fcrit) conclusion = `Так как |F| <= F_крит (${F.toFixed(4)} <= ${Fcrit.toFixed(4)}), то с вероятностью 95% нулевая гипотеза о равенстве средних значений длины желчного пузыря на УЗИ внутренних органов в опытной контрольной группе ${after ? "после" : "до"} воздействия подтверждается.`;
+    else conclusion = `Так как |F| > F_крит (${F.toFixed(4)} > ${Fcrit.toFixed(4)}), то с вероятностью 95% нулевая гипотеза о равенстве средних значений длины желчного пузыря на УЗИ внутренних органов в опытной контрольной группе ${after ? "после" : "до"} воздействия отвергается.`;
   
     return {
       R1, R2,
@@ -293,8 +280,8 @@ class Lab7 extends Component {
   };
   
   handleSecondTask = () => {
-    const beforeResults = this.wilcoxonTest(this.state.og.before, this.state.kg.before);
-    const afterResults = this.wilcoxonTest(this.state.og.after, this.state.kg.after);
+    const beforeResults = this.wilcoxonTest(this.state.og.before, this.state.kg.before, false);
+    const afterResults = this.wilcoxonTest(this.state.og.after, this.state.kg.after, true);
   
     const beforeText = `ДО эксперимента:\nR1: ${beforeResults.R1}\nR2: ${beforeResults.R2}\nn1: ${beforeResults.n1}\nn2: ${beforeResults.n2}\nW1: ${beforeResults.W1}\nW2: ${beforeResults.W2}\nW: ${beforeResults.W}\nF: ${beforeResults.F}\nF_крит: ${beforeResults.Fcrit}\n${beforeResults.conclusion}`;
     const afterText = `\nПОСЛЕ эксперимента:\nR1: ${afterResults.R1}\nR2: ${afterResults.R2}\nn1: ${afterResults.n1}\nn2: ${afterResults.n2}\nW1: ${afterResults.W1}\nW2: ${afterResults.W2}\nW: ${afterResults.W}\nF: ${afterResults.F}\nF_крит: ${afterResults.Fcrit}\n${afterResults.conclusion}`;
@@ -306,7 +293,7 @@ class Lab7 extends Component {
     });
   };
 
-  dispersionAnalysis = (dataSet1, dataSet2) => {
+  dispersionAnalysis = (dataSet1, dataSet2, after) => {
     const n1 = dataSet1.length;
     const n2 = dataSet2.length;
     const nComparison = n1 === n2 ? "n1 = n2" : n1 > n2 ? "n1 > n2" : "n1 < n2";
@@ -327,18 +314,17 @@ class Lab7 extends Component {
 
     const alpha = 0.05;
     const Fcrit = Math.round(jStat.normal.inv(1 - alpha / 2, 0, 1) * 1000) / 1000;
-
-    const isSignificant = Math.abs(F) > Fcrit;
-    const conclusion = isSignificant
-      ? `По данным УЗИ, длина желчного пузыря значимо изменилась (|F| > Fкрит: ${Math.abs(F).toFixed(4)} > ${Fcrit.toFixed(4)}).`
-      : `Изменения длины желчного пузыря на УЗИ не являются статистически значимыми (|F| <= Fкрит: ${Math.abs(F).toFixed(4)} <= ${Fcrit.toFixed(4)}).`;
+      
+    let conclusion = '';
+    if(Math.abs(F)<=Fcrit) conclusion = `Так как |F| <= F_крит (${F.toFixed(4)} <= ${Fcrit.toFixed(4)}), то с вероятностью 95% нулевая гипотеза о равенстве дисперсий длины желчного пузыря на УЗИ внутренних органов в опытной контрольной группе ${after ? "после" : "до"} воздействия подтверждается.`;
+    else conclusion = `Так как |F| > F_крит (${F.toFixed(4)} > ${Fcrit.toFixed(4)}), то с вероятностью 95% нулевая гипотеза о равенстве дисперсий длины желчного пузыря на УЗИ внутренних органов в опытной контрольной группе ${after ? "после" : "до"} воздействия отвергается.`;
 
     return { n1, n2, nComparison, R, F: Math.abs(F), Fcrit, conclusion };
   };
 
   handleThirdTask = () => {
-    const beforeResults = this.dispersionAnalysis(this.state.og.before, this.state.kg.before);
-    const afterResults = this.dispersionAnalysis(this.state.og.after, this.state.kg.after);
+    const beforeResults = this.dispersionAnalysis(this.state.og.before, this.state.kg.before, false);
+    const afterResults = this.dispersionAnalysis(this.state.og.after, this.state.kg.after, true);
 
     const resultBefore = `ДО эксперимента:\nn1: ${beforeResults.n1},\nn2: ${beforeResults.n2},\n${beforeResults.nComparison},\nR: ${beforeResults.R},\nF: ${beforeResults.F.toFixed(2)},\nFкрит: ${beforeResults.Fcrit.toFixed(2)},\n${beforeResults.conclusion}`;
     const resultAfter = `ПОСЛЕ эксперимента:\nn1: ${afterResults.n1},\nn2: ${afterResults.n2},\n${afterResults.nComparison},\nR: ${afterResults.R},\nF: ${afterResults.F.toFixed(2)},\nFкрит: ${afterResults.Fcrit.toFixed(2)},\n${afterResults.conclusion}`;
