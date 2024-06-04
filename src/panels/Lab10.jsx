@@ -430,6 +430,72 @@ class Lab10 extends Component {
             }
           }} />
         </FormItem>}
+        {fittingChartData && fittingChartDataNonLinear && <FormItem>
+          <h3>График подбора (Сравнение)</h3>
+          <Scatter data={{
+            labels: fittingChartDataNonLinear.labels,
+            datasets: [
+              fittingChartData.datasets[0],
+              fittingChartData.datasets[1],
+              /*{
+                ...fittingChartDataNonLinear.datasets[0],
+                backgroundColor: 'rgba(234, 96, 167, 0.8)',
+                borderColor: 'rgba(231, 245, 40, 0.69)'
+              },*/
+              {
+                ...fittingChartDataNonLinear.datasets[1],
+                borderColor: 'rgba(36, 245, 40, 0.69)'
+              }
+            ]
+          }} options={{
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: 'Возраст детей'
+                }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: 'Частота дыхания (взд/мин)'
+                }
+              }
+            }
+          }}/>
+        </FormItem>}
+        {residualsChartData && residualsChartDataNonLinear && <FormItem>
+          <h3>График остатков (Сравнение)</h3>
+          <Scatter data={{
+            labels: residualsChartData.labels,
+            datasets: [
+              {
+                ...residualsChartData.datasets[0],
+                label: 'Линейные остатки'
+              },
+              {
+                ...residualsChartDataNonLinear.datasets[0],
+                borderColor: 'rgba(36, 245, 40, 0.69)',
+                label: 'Нелинейные остатки'
+              }
+            ]
+          }} options={{
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: 'Возраст детей'
+                }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: 'Частота дыхания (взд/мин)'
+                }
+              }
+            }
+          }}/>
+        </FormItem>}
       </Panel>
     );
   }

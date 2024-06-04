@@ -17,7 +17,8 @@ import Lab6 from './panels/Lab6.jsx';
 import Lab7 from './panels/Lab7.jsx';
 import Lab8 from './panels/Lab8.jsx';
 import Lab10 from './panels/Lab10.jsx';
-const labs = [Lab1,Lab2,Lab2_v2,Lab3,Lab4,Lab5,Lab6,Lab7,Lab8,Lab10];
+import Itog from './panels/Itog.jsx';
+const labs = [Lab1,Lab2,Lab2_v2,Lab3,Lab4,Lab5,Lab6,Lab7,Lab8,Lab10,Itog];
 
 class App extends Component {
   constructor(props){

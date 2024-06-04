@@ -24,14 +24,14 @@ class Main extends Component {
     return(
       <Panel>
 				<PanelHeader>Лабораторные работы Гостяева Ярослава</PanelHeader>
-        {new Array(10).fill(0).map((x,i) => (
+        {new Array(11).fill(0).map((x,i) => (
           <Button key={i+1} mode={(i+1)%3===1 ? 'secondary' : ((i+1)%3===2 ? 'primary' : 'outline')}
             after={i>1 ? (i==2 ? icons[1] : (i==9 ? (<>{icons[0]}{icons[9]}</>) : icons[i-1])) : icons[i]}
             before={i>1 ? (i==2 ? icons[1] : (i==9 ? (<>{icons[0]}{icons[9]}</>) : icons[i-1])) : icons[i]}
             onClick={() => {
               dispatch(setPage(['labs','lab'+(i+1)]));
               dispatch(setPageState({title: 'Лабораторная работа №'+(i>1 ? (i==2 ? `2 (V2)` : (i==9 ? `10` : i)) : i+1), arr: i==0 ? lab1 : null}));
-            }} style={{margin:5}}>Лабораторная работа №{i>1 ? (i==2 ? `2 (V2)` : (i==9 ? `10` : i)) : i+1}</Button>
+            }} style={{margin:5}}>{i==10 ? "Зачётная работа" : `Лабораторная работа №${i>1 ? (i==2 ? "2 (V2)" : (i==9 ? "10" : i)) : i+1}`}</Button>
         ))}
       </Panel>
     )
