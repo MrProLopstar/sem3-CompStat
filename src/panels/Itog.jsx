@@ -1,169 +1,61 @@
 import React, { Component } from 'react';
-import { Panel, PanelHeader, FormItem, Textarea } from '@vkontakte/vkui';
+import { Panel, PanelHeader, FormItem, FormLayoutGroup, Textarea, Button, Input } from '@vkontakte/vkui';
 import { Icon24Back } from '@vkontakte/icons';
 import { getState, dispatch } from '../main.jsx';
 import { goBack } from '../store/router';
 import { Scatter } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-} from 'chart.js';
+import jStat from 'jstat';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
-
-// Данные для анализа
-const data = [
-  // [Возраст, Частота дыхания, Класс]
-  [1, 35, 0],
-  [2, 31, 0],
-  [3, 25, 0],
-  [5, 24, 0],
-  [7, 23, 0],
-  [8, 21, 0],
-  [9, 21, 0],
-  [11, 20, 0],
-  [13, 18, 0],
-  [14, 17, 0],
-  [15, 17, 0],
-  [19, 30, 1],
-  [20, 28, 1],
-  [21, 25, 1],
-  [23, 24, 1],
-  [24, 22, 1],
-  [25, 21, 1],
-  [27, 20, 1],
-  [28, 18, 1],
-  [30, 17, 1],
-];
-
-class DiscriminantAnalysis extends Component {
+class Lab10 extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      data: data,
-      ldaResult: null,
-      plotData: null
+      select: 0,
+      dataSets: [
+        {
+          title: 'Производительность и эффективность использования ресурсов в сельскохозяйственных предприятиях',
+          x1: [0.15, 0.34, 0.09, 0.21, 0.48, 0.41, 0.62, 0.5, 1.2],
+          x2: [1.91, 1.68, 1.89, 2.3, 0.88, 0.62, 1.09, 1.32, 0.68],
+          group: [1, 1, 1, 1, 2, 2, 2, 2, 2],
+          headers: ['Номер предприятия', 'Средний урожай, ц/га (X1)', 'Затраты на удобрения, тыс. руб./га (X2)']
+        },
+        {
+          title: 'Вовлечённость сотрудников в двух различных отделах компании',
+          x1: [3.5, 4.2, 2.8, 3.9, 3.1, 2.3, 3.0, 4.1, 2.7, 3.4],
+          x2: [7, 8.5, 6, 7.2, 8, 5.5, 6.8, 7.5, 6.2, 7],
+          group: [1, 1, 1, 1, 1, 2, 2, 2, 2, 2],
+          headers: ['Номер объекта', 'Среднее время обслуживания, ч (X1)', 'Уровень вовлечённости (Х2)']
+        },
+        {
+          title: 'Производительность студентов в двух различных классах',
+          x1: [85, 90, 78, 92, 88, 80, 75, 82, 79, 86],
+          x2: [3, 2, 5, 1, 2, 4, 6, 3, 5, 2],
+          group: [1, 1, 1, 1, 1, 2, 2, 2, 2, 2],
+          headers: ['Номер объекта', 'Средний балл, (X1)', 'Количество пропущенных занятий (Х2)']
+        }
+      ],
+      selectedDataSet: {},
+      scatterData: null,
+      result: '',
+      discriminantFunction: '',
+      covarianceMatrix: [],
+      predictions: [],
+      discriminantValues: []
     };
   }
-
-  componentDidMount() {
-    this.performDiscriminantAnalysis();
-  }
-
-  mean = (arr) => arr.reduce((acc, val) => acc + val, 0) / arr.length;
-
-  covarianceMatrix = (X) => {
-    const n = X.length;
-    const means = X[0].map((_, colIndex) => this.mean(X.map(row => row[colIndex])));
-    const covarianceMatrix = Array.from({ length: means.length }, () => Array(means.length).fill(0));
-
-    for (let i = 0; i < n; i++) {
-      for (let j = 0; j < means.length; j++) {
-        for (let k = 0; k < means.length; k++) {
-          covarianceMatrix[j][k] += (X[i][j] - means[j]) * (X[i][k] - means[k]) / (n - 1);
-        }
-      }
-    }
-    return covarianceMatrix;
-  };
-
-  inverseMatrix = (matrix) => {
-    const size = matrix.length;
-    const identity = [...Array(size)].map((_, i) => [...Array(size)].map((_, j) => i === j ? 1 : 0));
-    
-    for (let i = 0; i < size; i++) {
-      let scale = 1 / matrix[i][i];
-      for (let j = 0; j < size; j++) {
-        matrix[i][j] *= scale;
-        identity[i][j] *= scale;
-      }
-      for (let k = 0; k < size; k++) {
-        if (k !== i) {
-          scale = matrix[k][i];
-          for (let j = 0; j < size; j++) {
-            matrix[k][j] -= scale * matrix[i][j];
-            identity[k][j] -= scale * identity[i][j];
-          }
-        }
-      }
-    }
-    return identity;
-  };
-
-  multiplyMatrix = (A, B) => {
-    return A.map(row => B[0].map((_, colIndex) => row.reduce((sum, val, rowIndex) => sum + val * B[rowIndex][colIndex], 0)));
-  };
-
-  performDiscriminantAnalysis = () => {
-    const { data } = this.state;
-
-    // Разделяем данные и метки классов
-    const X = data.map(item => [item[0], item[1]]);
-    const y = data.map(item => item[2]);
-
-    // Разделение данных на классы
-    const classes = [...new Set(y)];
-    const classData = classes.map(cls => X.filter((_, index) => y[index] === cls));
-
-    // Средние значения для каждого класса
-    const means = classData.map(clsData => clsData.reduce((acc, val) => acc.map((sum, i) => sum + val[i]), Array(clsData[0].length).fill(0)).map(sum => sum / clsData.length));
-
-    // Общая ковариационная матрица
-    const covMatrices = classData.map(clsData => this.covarianceMatrix(clsData));
-    const pooledCovMatrix = covMatrices.reduce((acc, covMatrix) => acc.map((row, rowIndex) => row.map((val, colIndex) => val + covMatrix[rowIndex][colIndex])), Array(covMatrices[0].length).fill().map(() => Array(covMatrices[0].length).fill(0))).map(row => row.map(val => val / classes.length));
-
-    // Инверсия ковариационной матрицы
-    const invPooledCovMatrix = this.inverseMatrix(pooledCovMatrix);
-
-    // Коэффициенты дискриминантной функции
-    const discriminantFunctions = means.map(meanVec => this.multiplyMatrix([meanVec], invPooledCovMatrix)[0]);
-
-    // Проекции данных на дискриминантные функции
-    const projections = X.map(row => discriminantFunctions.map(discriminantFunction => discriminantFunction.reduce((sum, coef, i) => sum + coef * row[i], 0)));
-
-    // Подготовка данных для построения графиков
-    const plotData = {
-      labels: X.map((_, index) => index + 1),
-      datasets: classes.map((cls, clsIndex) => ({
-        label: `Класс ${cls}`,
-        data: projections.filter((_, index) => y[index] === cls).map((proj, i) => ({ x: X[i][0], y: proj })),
-        backgroundColor: clsIndex === 0 ? 'rgba(255, 99, 132, 0.5)' : 'rgba(54, 162, 235, 0.5)',
-        borderColor: clsIndex === 0 ? 'rgba(255, 99, 132, 1)' : 'rgba(54, 162, 235, 1)',
-        borderWidth: 1,
-        pointRadius: 5,
-        showLine: false
-      }))
-    };
-
-    this.setState({ ldaResult: { means, discriminantFunctions }, plotData });
-  };
 
   renderTable = (tableData, headers) => {
     return (
       <table>
         <thead>
-          <tr>
-            {headers.map(header => <th key={header}>{header}</th>)}
+          <tr className="table-cell">
+            {headers.map(header => <th key={header} className="table-cell">{header}</th>)}
           </tr>
         </thead>
         <tbody>
-          {tableData.map((row, index) => (
-            <tr key={index}>
-              {Object.keys(row).map(header => <td key={header}>{row[header].toFixed(3)}</td>)}
+          {tableData[0].map((x, index) => (
+            <tr key={index} className="table-cell">
+              {tableData.map((y, i) => <td key={index.toString() + i.toString()} className="table-cell">{y[index]}</td>)}
             </tr>
           ))}
         </tbody>
@@ -171,10 +63,161 @@ class DiscriminantAnalysis extends Component {
     );
   }
 
+  calculateDiscriminantValues = (select) => {
+    const { dataSets } = this.state;
+    const dataSet = dataSets[select-1];
+    if(!dataSet) return;
+    const { x1, x2, group } = dataSet;
+    const x1Group1 = x1.filter((_, i) => group[i] === 1);
+    const x1Group2 = x1.filter((_, i) => group[i] === 2);
+    const x2Group1 = x2.filter((_, i) => group[i] === 1);
+    const x2Group2 = x2.filter((_, i) => group[i] === 2);
+  
+    if (x1Group1.length === 0 || x1Group2.length === 0 || x2Group1.length === 0 || x2Group2.length === 0) {
+      console.error('One of the groups is empty');
+      return [];
+    }
+  
+    const mean1 = [jStat.mean(x1Group1), jStat.mean(x2Group1)];
+    const mean2 = [jStat.mean(x1Group2), jStat.mean(x2Group2)];
+    console.log("Средние значения для группы 1:", mean1);
+    console.log("Средние значения для группы 2:", mean2);
+    
+    const covMatrix1 = [
+      [jStat.covariance(x1Group1, x1Group1), jStat.covariance(x1Group1, x2Group1)],
+      [jStat.covariance(x2Group1, x1Group1), jStat.covariance(x2Group1, x2Group1)]
+    ];
+    const covMatrix2 = [
+      [jStat.covariance(x1Group2, x1Group2), jStat.covariance(x1Group2, x2Group2)],
+      [jStat.covariance(x2Group2, x1Group2), jStat.covariance(x2Group2, x2Group2)]
+    ];
+    console.log("Ковариационная матрица для группы 1:", covMatrix1);
+    console.log("Ковариационная матрица для группы 2:", covMatrix2);
+  
+    const pooledCovMatrix = jStat.multiply(jStat.add(covMatrix1, covMatrix2), 0.5);
+    console.log("Общая ковариационная матрица:", pooledCovMatrix);
+  
+    const invPooledCovMatrix = jStat.inv(pooledCovMatrix);
+    console.log("Обратная ковариационная матрица:", invPooledCovMatrix);
+  
+    const coefficients = jStat.multiply(invPooledCovMatrix, jStat.transpose([jStat.subtract(mean1, mean2)]));
+    console.log("Коэффициенты дискриминантной функции:", coefficients);
+  
+    const c = 0.5 * jStat.dot(jStat.add(mean1, mean2), coefficients.map(row => row[0]));
+    console.log("Свободный член дискриминантной функции (c):", c);
+  
+    const discriminantValues = x1.map((_, i) => {
+      const z = jStat.dot([x1[i], x2[i]], coefficients.map(row => row[0]));
+      return z - c;
+    });
+  
+    return this.setState({
+      select,
+      pooledCovMatrix,
+      coefficients,
+      c,
+      discriminantValues
+    });
+  }
+
+  renderCovarianceMatrix = (matrix) => {
+    return (
+      <table>
+        <thead>
+          <tr className="table-cell">
+            <th className="table-cell"></th>
+            <th className="table-cell">X1</th>
+            <th className="table-cell">X2</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="table-cell">
+            <td className="table-cell">X1</td>
+            <td className="table-cell">{matrix[0][0].toFixed(5)}</td>
+            <td className="table-cell">{matrix[0][1].toFixed(5)}</td>
+          </tr>
+          <tr className="table-cell">
+            <td className="table-cell">X2</td>
+            <td className="table-cell">{matrix[1][0].toFixed(5)}</td>
+            <td className="table-cell">{matrix[1][1].toFixed(5)}</td>
+          </tr>
+        </tbody>
+      </table>
+    );
+  }
+
+  renderDiscriminantEquation = (coefficients, c) => {
+    return (
+      <div>
+        <p>
+          z(x) = {coefficients[0][0].toFixed(5)} * X1 + {coefficients[1][0].toFixed(5)} * X2 - {c.toFixed(5)}
+        </p>
+      </div>
+    );
+  }
+
+  handleAnalyze = () => {
+    const { x1Input, x2Input, coefficients, c } = this.state;
+    const x1 = parseFloat(x1Input);
+    const x2 = parseFloat(x2Input);
+
+    if (isNaN(x1) || isNaN(x2) || coefficients.length === 0) {
+      this.setState({ predictionResult: 'Пожалуйста, введите корректные значения факторов.' });
+      return;
+    }
+
+    const z = jStat.dot([x1, x2], coefficients.map(row => row[0])) - c;
+    const group = z < 0 ? 1 : 2;
+
+    this.setState({ predictionResult: `Т.к. c = ${c.toFixed(5)} < f(xi) = ${z.toFixed(3)}, то рассматриваемый объект принадлежит классу №${group}` });
+  }
+
+  renderScatterPlot = (dataSet) => {
+    const group1 = dataSet.x1.filter((_, i) => dataSet.group[i] === 1).map((x, i) => ({ x, y: dataSet.x2.filter((_, i) => dataSet.group[i] === 2)[i] }));
+    const group2 = dataSet.x1.filter((_, i) => dataSet.group[i] === 2).map((x, i) => ({ x, y: dataSet.x2.filter((_, i) => dataSet.group[i] === 2)[i] }));
+    console.log("groupPlot1", group1);
+    console.log("groupPlot2", group2);
+
+    const data = {
+      datasets: [
+        {
+          label: 'Первая группа',
+          data: group1,
+          backgroundColor: 'red',
+        },
+        {
+          label: 'Вторая группа',
+          data: group2,
+          backgroundColor: 'blue',
+        },
+      ],
+    };
+
+    const options = {
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: 'X1',
+          },
+        },
+        y: {
+          title: {
+            display: true,
+            text: 'X2',
+          },
+        },
+      },
+    };
+
+    return <Scatter data={data} options={options} />;
+  }
+
   render() {
     const { title } = getState().app;
-    const { plotData, ldaResult } = this.state;
-    const tableHeaders = ['Возраст (лет)', 'Частота дыхания (взд/мин)', 'Класс'];
+    const { select, dataSets, discriminantValues, pooledCovMatrix, coefficients, c, x1Input, x2Input, predictionResult } = this.state;
+    const dataSet = dataSets[select - 1];
+    console.log(pooledCovMatrix)
 
     return (
       <Panel>
@@ -182,39 +225,71 @@ class DiscriminantAnalysis extends Component {
         <FormItem>
           <Textarea
             readonly
-            value="Задание: Выполнить дискриминантный анализ для определения различий между классами."
+            value={`Задание: Выполнить дискриминантный анализ.${dataSet ? `\n\n${dataSet.title}` : ""}`}
           />
         </FormItem>
-        {ldaResult && <>
-          <h3>Дискриминантные функции</h3>
-          {ldaResult.discriminantFunctions.map((func, index) => (
-            <p key={index}>{`Функция для класса ${index}: ${func.map(coef => coef.toFixed(3)).join(' + ')}`}</p>
-          ))}
-        </>}
-        {plotData && <FormItem>
-          <h3>Результаты дискриминантного анализа</h3>
-          <Scatter data={plotData} options={{
-            scales: {
-              x: {
-                title: {
-                  display: true,
-                  text: 'Возраст (лет)'
-                }
-              },
-              y: {
-                title: {
-                  display: true,
-                  text: 'Проекция'
-                }
-              }
-            }
-          }}/>
-        </FormItem>}
-        <h3>Данные</h3>
-        {this.renderTable(data, tableHeaders)}
+        <FormLayoutGroup mode="horizontal">
+          <FormItem><Button mode="secondary" stretched onClick={() => { this.calculateDiscriminantValues(1); }}>1 выборка</Button></FormItem>
+          <FormItem><Button mode="secondary" stretched onClick={() => { this.calculateDiscriminantValues(2); }}>2 выборка</Button></FormItem>
+          <FormItem><Button mode="secondary" stretched onClick={() => { this.calculateDiscriminantValues(3); }}>3 выборка</Button></FormItem>
+        </FormLayoutGroup>
+        {dataSet && this.renderTable([
+          dataSet.group.map((x, i) => i + 1),
+          dataSet.x1,
+          dataSet.x2,
+          dataSet.group,
+          discriminantValues
+        ], [...dataSet.headers, "Номер группы", "f(xi)"])}
+        {pooledCovMatrix?.length > 0 && (
+          <FormItem>
+            <h3>Ковариационная матрица:</h3>
+            {this.renderCovarianceMatrix(pooledCovMatrix)}
+          </FormItem>
+        )}
+        {coefficients?.length > 0 && (
+          <FormItem>
+            <h3>Уравнение дискриминантной функции:</h3>
+            {this.renderDiscriminantEquation(coefficients, c)}
+          </FormItem>
+        )}
+        {dataSet && (
+          <FormItem>
+            <h3>График:</h3>
+            {this.renderScatterPlot(dataSet)}
+          </FormItem>
+        )}
+        <FormLayoutGroup mode="horizontal">
+          <FormItem top="Введите значение факторов для проведения дискриминантного анализа:">
+            <Input
+              type="text"
+              value={x1Input}
+              onChange={(e) => this.setState({ x1Input: e.target.value })}
+              placeholder="X1"
+            />
+          </FormItem>
+          <FormItem>
+            <Input
+              type="text"
+              value={x2Input}
+              onChange={(e) => this.setState({ x2Input: e.target.value })}
+              placeholder="X2"
+            />
+          </FormItem>
+          <FormItem>
+            <Button mode="secondary" onClick={this.handleAnalyze}>Осуществить прогнозирование</Button>
+          </FormItem>
+        </FormLayoutGroup>
+        {predictionResult && (
+          <FormItem>
+            <Textarea
+              readonly
+              value={predictionResult}
+            />
+          </FormItem>
+        )}
       </Panel>
     );
   }
 }
 
-export default DiscriminantAnalysis;
+export default Lab10;
