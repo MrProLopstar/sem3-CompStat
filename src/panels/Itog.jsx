@@ -1,13 +1,12 @@
 import React, { Component } from 'react';
 import { Panel, PanelHeader, FormItem, FormLayoutGroup, Textarea, Button, Input } from '@vkontakte/vkui';
+import { Scatter } from 'react-chartjs-2';
 import { Icon24Back } from '@vkontakte/icons';
 import { getState, dispatch } from '../main.jsx';
 import { goBack } from '../store/router';
-import { Scatter } from 'react-chartjs-2';
-import jStat from 'jstat';
 
-class Lab10 extends Component {
-  constructor(props) {
+class Itog extends Component {
+  constructor(props){
     super(props);
     this.state = {
       select: 0,
@@ -68,59 +67,90 @@ class Lab10 extends Component {
 
   calculateDiscriminantValues = (select) => {
     const { dataSets } = this.state;
-    const dataSet = dataSets[select-1];
+    const dataSet = dataSets[select - 1];
     if(!dataSet) return;
     const { x1, x2, group } = dataSet;
-    const x1Group1 = x1.filter((_, i) => group[i] === 1);
-    const x1Group2 = x1.filter((_, i) => group[i] === 2);
-    const x2Group1 = x2.filter((_, i) => group[i] === 1);
-    const x2Group2 = x2.filter((_, i) => group[i] === 2);
-  
-    if (x1Group1.length === 0 || x1Group2.length === 0 || x2Group1.length === 0 || x2Group2.length === 0) {
+    const x1Group1 = x1.filter((_, i) => group[i] === 1), x1Group2 = x1.filter((_, i) => group[i] === 2);
+    const x2Group1 = x2.filter((_, i) => group[i] === 1), x2Group2 = x2.filter((_, i) => group[i] === 2);
+
+    if(x1Group1.length===0 || x1Group2.length===0 || x2Group1.length===0 || x2Group2.length===0) {
       console.error('One of the groups is empty');
       return [];
     }
-  
-    const mean1 = [jStat.mean(x1Group1), jStat.mean(x2Group1)];
-    const mean2 = [jStat.mean(x1Group2), jStat.mean(x2Group2)];
+
+    const mean = (arr) => arr.reduce((sum, value) => sum+value, 0) / arr.length;
+    const mean1 = [mean(x1Group1), mean(x2Group1)];
+    const mean2 = [mean(x1Group2), mean(x2Group2)];
     console.log("Средние значения для группы 1:", mean1);
     console.log("Средние значения для группы 2:", mean2);
-    
+
+    const covariance = (arr1, arr2) => {
+      const mean1 = mean(arr1);
+      const mean2 = mean(arr2);
+      return arr1.reduce((sum, value, i) => sum + (value - mean1) * (arr2[i] - mean2), 0) / (arr1.length - 1);
+    };
+
     const covMatrix1 = [
-      [jStat.covariance(x1Group1, x1Group1), jStat.covariance(x1Group1, x2Group1)],
-      [jStat.covariance(x2Group1, x1Group1), jStat.covariance(x2Group1, x2Group1)]
+      [covariance(x1Group1, x1Group1), covariance(x1Group1, x2Group1)],
+      [covariance(x2Group1, x1Group1), covariance(x2Group1, x2Group1)]
     ];
     const covMatrix2 = [
-      [jStat.covariance(x1Group2, x1Group2), jStat.covariance(x1Group2, x2Group2)],
-      [jStat.covariance(x2Group2, x1Group2), jStat.covariance(x2Group2, x2Group2)]
+      [covariance(x1Group2, x1Group2), covariance(x1Group2, x2Group2)],
+      [covariance(x2Group2, x1Group2), covariance(x2Group2, x2Group2)]
     ];
     console.log("Ковариационная матрица для группы 1:", covMatrix1);
     console.log("Ковариационная матрица для группы 2:", covMatrix2);
-  
-    const pooledCovMatrix = jStat.multiply(jStat.add(covMatrix1, covMatrix2), 0.5);
+
+    const addMatrices = (m1, m2) => m1.map((row, i) => row.map((val, j) => val + m2[i][j]));
+    const multiplyMatrixByScalar = (matrix, scalar) => matrix.map(row => row.map(val => val * scalar));
+    const pooledCovMatrix = multiplyMatrixByScalar(addMatrices(covMatrix1, covMatrix2), 0.5);
     console.log("Общая ковариационная матрица:", pooledCovMatrix);
-  
-    const invPooledCovMatrix = jStat.inv(pooledCovMatrix);
+
+    const inverseMatrix = (matrix) => {
+      const [a, b, c, d] = [matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1]];
+      const det = a*d-b*c;
+      return [
+        [d/det, -b/det],
+        [-c/det, a/det]
+      ];
+    };
+
+    const invPooledCovMatrix = inverseMatrix(pooledCovMatrix);
     console.log("Обратная ковариационная матрица:", invPooledCovMatrix);
-  
-    const coefficients = jStat.multiply(invPooledCovMatrix, jStat.transpose([jStat.subtract(mean1, mean2)]));
+
+    const subtractVectors = (v1, v2) => v1.map((val, i) => val - v2[i]);
+    const addVectors = (v1, v2) => v1.map((val, i) => val + v2[i]);
+    const dotProduct = (v1, v2) => v1.reduce((sum, val, i) => sum + val * v2[i], 0);
+
+    const coefficients = invPooledCovMatrix.map(row => dotProduct(row, subtractVectors(mean1, mean2)));
     console.log("Коэффициенты дискриминантной функции:", coefficients);
-  
-    const c = 0.5 * jStat.dot(jStat.add(mean1, mean2), coefficients.map(row => row[0]));
+
+    const c = 0.5 * dotProduct(addVectors(mean1, mean2), coefficients);
     console.log("Свободный член дискриминантной функции (c):", c);
-  
+
     const discriminantValues = x1.map((_, i) => {
-      const z = jStat.dot([x1[i], x2[i]], coefficients.map(row => row[0]));
-      return z - c;
+      const z = dotProduct([x1[i], x2[i]], coefficients);
+      return z-c;
     });
-  
-    return this.setState({
+
+    this.setState({
       select,
       pooledCovMatrix,
       coefficients,
       c,
       discriminantValues
     });
+  }
+
+  renderDiscriminantEquation = (coefficients, c) => {
+    if(!coefficients || coefficients.length== 0 || c===undefined) return <p>Недостаточно данных для отображения уравнения дискриминантной функции.</p>;
+    return (
+      <div>
+        <p>
+          z(x) = {coefficients[0].toFixed(5)} * X1 + {coefficients[1].toFixed(5)} * X2 - {c.toFixed(5)}
+        </p>
+      </div>
+    );
   }
 
   renderCovarianceMatrix = (matrix) => {
@@ -149,30 +179,15 @@ class Lab10 extends Component {
     );
   }
 
-  renderDiscriminantEquation = (coefficients, c) => {
-    return (
-      <div>
-        <p>
-          z(x) = {coefficients[0][0].toFixed(5)} * X1 + {coefficients[1][0].toFixed(5)} * X2 - {c.toFixed(5)}
-        </p>
-      </div>
-    );
-  }
-
   handleAnalyze = () => {
     const { x1Input, x2Input, coefficients, c } = this.state;
     const x1 = parseFloat(x1Input);
     const x2 = parseFloat(x2Input);
-
-    if (isNaN(x1) || isNaN(x2) || coefficients.length === 0) {
-      this.setState({ predictionResult: 'Пожалуйста, введите корректные значения факторов.' });
-      return;
-    }
-
-    const z = jStat.dot([x1, x2], coefficients.map(row => row[0])) - c;
+    if(isNaN(x1) || isNaN(x2) || coefficients.length===0) return this.setState({ predictionResult: 'Пожалуйста, введите корректные значения факторов.' });
+    const dotProduct = (v1, v2) => v1.reduce((sum, val, i) => sum + val * v2[i], 0);
+    const z = dotProduct([x1, x2], coefficients) - c;
     const group = z < 0 ? 1 : 2;
-
-    this.setState({ predictionResult: `Т.к. c = ${c.toFixed(5)} ${group==1 ? ">" : "<"} f(xi) = ${z.toFixed(3)}, то рассматриваемый объект принадлежит классу №${group}` });
+    this.setState({ predictionResult: `Т.к. c = ${c.toFixed(5)} ${group === 1 ? ">" : "<"} f(xi) = ${z.toFixed(3)}, то рассматриваемый объект принадлежит классу №${group}` });
   }
 
   renderScatterPlot = (dataSet) => {
@@ -180,48 +195,33 @@ class Lab10 extends Component {
     const group2 = dataSet.x1.filter((_, i) => dataSet.group[i] === 2).map((x, i) => ({ x, y: dataSet.x2.filter((_, i) => dataSet.group[i] === 2)[i] }));
     console.log("groupPlot1", group1);
     console.log("groupPlot2", group2);
-
     const data = {
       datasets: [
         {
           label: 'Первая группа',
           data: group1,
-          backgroundColor: 'red',
+          backgroundColor: 'red'
         },
         {
           label: 'Вторая группа',
           data: group2,
-          backgroundColor: 'blue',
-        },
-      ],
+          backgroundColor: 'blue'
+        }
+      ]
     };
-
     const options = {
       scales: {
-        x: {
-          title: {
-            display: true,
-            text: 'X1',
-          },
-        },
-        y: {
-          title: {
-            display: true,
-            text: 'X2',
-          },
-        },
-      },
+        x: { title: { display: true, text: 'X1' } },
+        y: { title: { display: true, text: 'X2' } }
+      }
     };
-
-    return <Scatter data={data} options={options} />;
+    return <Scatter data={data} options={options}/>;
   }
 
   render() {
     const { title } = getState().app;
     const { select, dataSets, discriminantValues, pooledCovMatrix, coefficients, c, x1Input, x2Input, predictionResult } = this.state;
-    const dataSet = dataSets[select - 1];
-    console.log(pooledCovMatrix)
-
+    const dataSet = dataSets[select-1];
     return (
       <Panel>
         <PanelHeader before={<Icon24Back onClick={() => dispatch(goBack())} />}>{title}</PanelHeader>
@@ -261,7 +261,7 @@ class Lab10 extends Component {
             {this.renderScatterPlot(dataSet)}
           </FormItem>
         )}
-        <FormLayoutGroup mode="horizontal">
+        {dataSet && <FormLayoutGroup mode="horizontal">
           <FormItem top="Введите значение факторов для проведения дискриминантного анализа:">
             <Input
               type="text"
@@ -281,7 +281,7 @@ class Lab10 extends Component {
           <FormItem>
             <Button mode="secondary" onClick={this.handleAnalyze}>Осуществить прогнозирование</Button>
           </FormItem>
-        </FormLayoutGroup>
+        </FormLayoutGroup>}
         {predictionResult && (
           <FormItem>
             <Textarea
@@ -295,4 +295,4 @@ class Lab10 extends Component {
   }
 }
 
-export default Lab10;
+export default Itog;
