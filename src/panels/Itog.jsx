@@ -70,6 +70,7 @@ class Itog extends Component {
     const dataSet = dataSets[select - 1];
     if(!dataSet) return;
     const { x1, x2, group } = dataSet;
+    //Разделение данных на группы
     const x1Group1 = x1.filter((_, i) => group[i] === 1), x1Group2 = x1.filter((_, i) => group[i] === 2);
     const x2Group1 = x2.filter((_, i) => group[i] === 1), x2Group2 = x2.filter((_, i) => group[i] === 2);
 
@@ -78,12 +79,14 @@ class Itog extends Component {
       return [];
     }
 
+    //Вычисление средних значений
     const mean = (arr) => arr.reduce((sum, value) => sum+value, 0) / arr.length;
     const mean1 = [mean(x1Group1), mean(x2Group1)];
     const mean2 = [mean(x1Group2), mean(x2Group2)];
     console.log("Средние значения для группы 1:", mean1);
     console.log("Средние значения для группы 2:", mean2);
 
+    //Вычисление ковариационных матриц
     const covariance = (arr1, arr2) => {
       const mean1 = mean(arr1);
       const mean2 = mean(arr2);
@@ -101,11 +104,13 @@ class Itog extends Component {
     console.log("Ковариационная матрица для группы 1:", covMatrix1);
     console.log("Ковариационная матрица для группы 2:", covMatrix2);
 
+    //Вычисление общей ковариационной матрицы
     const addMatrices = (m1, m2) => m1.map((row, i) => row.map((val, j) => val + m2[i][j]));
     const multiplyMatrixByScalar = (matrix, scalar) => matrix.map(row => row.map(val => val * scalar));
     const pooledCovMatrix = multiplyMatrixByScalar(addMatrices(covMatrix1, covMatrix2), 0.5);
     console.log("Общая ковариационная матрица:", pooledCovMatrix);
 
+    //Вычисление обратной ковариационной матрицы
     const inverseMatrix = (matrix) => {
       const [a, b, c, d] = [matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1]];
       const det = a*d-b*c;
@@ -118,6 +123,7 @@ class Itog extends Component {
     const invPooledCovMatrix = inverseMatrix(pooledCovMatrix);
     console.log("Обратная ковариационная матрица:", invPooledCovMatrix);
 
+    //Вычисление коэффициентов дискриминантной функции
     const subtractVectors = (v1, v2) => v1.map((val, i) => val - v2[i]);
     const addVectors = (v1, v2) => v1.map((val, i) => val + v2[i]);
     const dotProduct = (v1, v2) => v1.reduce((sum, val, i) => sum + val * v2[i], 0);
@@ -125,9 +131,11 @@ class Itog extends Component {
     const coefficients = invPooledCovMatrix.map(row => dotProduct(row, subtractVectors(mean1, mean2)));
     console.log("Коэффициенты дискриминантной функции:", coefficients);
 
+    //Вычисление свободного члена дискриминантной функции
     const c = 0.5 * dotProduct(addVectors(mean1, mean2), coefficients);
     console.log("Свободный член дискриминантной функции (c):", c);
 
+    //Вычисление дискриминантных значений
     const discriminantValues = x1.map((_, i) => {
       const z = dotProduct([x1[i], x2[i]], coefficients);
       return z-c;
@@ -146,9 +154,7 @@ class Itog extends Component {
     if(!coefficients || coefficients.length== 0 || c===undefined) return <p>Недостаточно данных для отображения уравнения дискриминантной функции.</p>;
     return (
       <div>
-        <p>
-          z(x) = {coefficients[0].toFixed(5)} * X1 + {coefficients[1].toFixed(5)} * X2 - {c.toFixed(5)}
-        </p>
+        <p>z(x) = {coefficients[0].toFixed(5)} * X1 + {coefficients[1].toFixed(5)} * X2 - {c.toFixed(5)}</p>
       </div>
     );
   }
